@@ -1,0 +1,16 @@
+[project]
+name = "data-managment-system"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "dotenv>=0.9.9",
+    "fsspec>=2026.7.0",
+    "ipykernel>=7.3.0",
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.5",
+    "reflex>=0.9.8",
+    "sqlalchemy>=2.0.52",
+]
