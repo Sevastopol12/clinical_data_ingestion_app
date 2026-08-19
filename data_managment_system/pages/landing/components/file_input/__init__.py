@@ -16,12 +16,14 @@ def upload_file_area() -> rx.Component:
             id="upload_section",
             multiple=True,
             _hover={"cursor": "pointer"},
-            on_drop=FileInputState.dump_files(
+            on_drop=FileInputState.upload_files(
                 rx.upload_files_chunk(upload_id="upload_section")
             ),
         ),
         rx.button(
-            "Upload",
+            "Dump",
+            on_click=FileInputState.dump_files,
+            _hover={"cursor": "pointer"},
         ),
         rx.vstack(
             rx.foreach(
@@ -41,6 +43,7 @@ def uploaded_file_card(filename: rx.Var[str]) -> rx.Component:
                 rx.icon("x"),
                 variant="ghost",
                 on_click=FileInputState.remove_file(filename),
+                _hover={"cursor": "pointer"},
             ),
             width="100%",
         ),
