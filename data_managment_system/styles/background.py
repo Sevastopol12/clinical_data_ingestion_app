@@ -5,8 +5,7 @@ def create_background():
     Creates a NeonDB-inspired background with glowing, moving violet circles.
     """
     # Custom CSS for animations
-    # We use rx.el.style to inject keyframes directly into the page
-    style_tag = rx.el.Style(
+    style_tag = rx.el.style(
         """
         @keyframes float {
             0% { transform: translate(0, 0); }
@@ -32,10 +31,11 @@ def create_background():
 
     # Blob configurations: (size, color, top, left, animation_delay)
     blobs = [
-        ("400px", "rgba(139, 92, 246, 0.6)", "10%", "10%", "0s"),      # Violet 500
-        ("600px", "rgba(109, 40, 217, 0.4)", "40%", "60%", "-5s"),    # Violet 700
-        ("500px", "rgba(167, 139, 250, 0.5)", "70%", "20%", "-10s"),   # Violet 400
-    ]
+            ("35vw", "rgba(139, 92, 246, 0.55)", "5%", "10%", "0s"),      # Violet 500
+            ("45vw", "rgba(109, 40, 217, 0.45)", "35%", "55%", "-5s"),    # Violet 700
+            ("30vw", "rgba(167, 139, 250, 0.40)", "60%", "15%", "-10s"),   # Violet 400
+        ]
+
 
     blob_elements = []
     for size, color, top, left, delay in blobs:
@@ -58,10 +58,9 @@ def create_background():
         rx.box(
             *blob_elements,
             position="fixed",
-            top="0",
-            left="0",
-            width="100vw",
-            height="100vh",
+            inset="0",
+            width="100%",
+            height="100%",
             overflow="hidden",
             z_index="-1",
             pointer_events="none",

@@ -1,6 +1,6 @@
 import reflex as rx
 from data_managment_system.styles.background import create_background
-
+from .components import upload_file_area
 
 @rx.page(route="/")
 def index() -> rx.Component:
@@ -8,12 +8,11 @@ def index() -> rx.Component:
         create_background(),
         rx.container(
             rx.center(
-                rx.heading("Nuhuh"),
+                upload_file_area(),
                 width="100%",
                 align="center",
-                font_size="10em",
             ),
-            min_width="100vw",
+            # width="50vw",
             padding="12em 6em",
         ),
     )
