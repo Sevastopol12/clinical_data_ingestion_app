@@ -105,29 +105,29 @@ class FileInputState(rx.State):
                 self.is_uploading = True
 
             # Register
-            files = self._register_batch()
+            files = self._create_upload_requests()
 
             # Load to storage
-            upload_responses = await create_task(_load_to_storage(list(files.values())))
+            upload_responses = await _load_to_storage(list(files.values()))
 
+            # Handle upload results
             failed_files: list[str] = []
             grouped_requests: list[IngestionDetail] = []
-
             for response in upload_responses:
-                if response.status != FileStatus.CREATED:
+                if (
+                    isinstance(response, Exception)
+                    or response.status != FileStatus.CREATED
+                ):
                     failed_files.append(response.filename)
                     logger.error(
                         f"Failed {response.filename}: {response.error_message}"
                     )
+
                 grouped_requests.append(
                     IngestionDetail(
                         response=response, metadata=files.get(response.filename)
                     )
                 )
-
-            # Record
-            record_files = self._create_record(grouped_requests)
-            record_task = create_task(_record_file(record_files))
 
             # Update UI
             async with self:
@@ -144,7 +144,9 @@ class FileInputState(rx.State):
             else:
                 yield rx.toast.success("Success, all files dumped and recorded.")
 
-            await gather(record_task)
+            # Record
+            record_files = self._create_record_requests(grouped_requests)
+            await _record_file(record_files)
 
         except Exception as exc:
             rx.toast.error(exc)
@@ -152,13 +154,13 @@ class FileInputState(rx.State):
                 self.is_uploading = False
             raise
 
-    def _register_batch(self) -> dict[str, IngestionCreate]:
+    def _create_upload_requests(self) -> dict[str, IngestionCreate]:
         return {
             filename: IngestionCreate(filename=filename, content=content)
             for filename, content in self.uploaded_files.items()
         }
 
-    def _create_record(
+    def _create_record_requests(
         self, succeed_files: set[IngestionDetail]
     ) -> list[IngestionComplete]:
         return [

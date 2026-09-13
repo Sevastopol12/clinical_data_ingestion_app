@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def extract_csv_excel_headers(filename: str, content: bytes) -> list[str]:
     """Extracts column headers from either CSV or XLSX bytes."""
-    try: 
+    try:
         if filename.endswith(".xlsx"):
             excel_file = BytesIO(content)
             wb = load_workbook(excel_file, read_only=True, data_only=True)
@@ -55,7 +55,7 @@ async def _load_to_storage(files: list[IngestionCreate]) -> list[IngestionRespon
                 # if response.status == FileStatus.CREATED
             ]
 
-            results = await gather(*upload_tasks)
+            results = await gather(*upload_tasks, return_exceptions=True)
 
     return results
 
