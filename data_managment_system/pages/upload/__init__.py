@@ -1,6 +1,9 @@
 import reflex as rx
-from data_managment_system.styles.background import create_background
+
+from data_managment_system.theme import create_background
+
 from .components import upload_file_area
+
 
 @rx.page(route="/")
 def index() -> rx.Component:

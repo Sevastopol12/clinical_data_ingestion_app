@@ -1,8 +1,10 @@
 import reflex as rx
-from .state import FileInputState
+
+from data_managment_system.states.upload import FileInputState
 
 
 def upload_file_area() -> rx.Component:
+    # TODO(B5: move to copy.py)
     return rx.vstack(
         # Drag and Drop Upload Zone
         rx.upload(
@@ -34,9 +36,12 @@ def upload_file_area() -> rx.Component:
             border_radius="xl",
             background_color=rx.color("accent", 2),
             _hover={"cursor": "pointer"},
-            on_drop=FileInputState.upload_files(
-                rx.upload_files_chunk(upload_id="upload_section")
+            on_drop=FileInputState.upload_files(  # pyright: ignore[reportArgumentType]
+                rx.upload_files_chunk(  # pyright: ignore[reportArgumentType]
+                    upload_id="upload_section"
+                )
             ),
+            on_drop_rejected=FileInputState.reject_file_upload,
             width="100%",
         ),
         # Action Bar
@@ -85,6 +90,7 @@ def upload_file_area() -> rx.Component:
 
 
 def uploaded_file_card(filename: rx.Var[str]) -> rx.Component:
+    # TODO(B5: move to copy.py)
     is_selected = FileInputState.selected_file == filename
 
     return rx.card(
@@ -101,7 +107,9 @@ def uploaded_file_card(filename: rx.Var[str]) -> rx.Component:
                 rx.hstack(
                     # Dynamic badge based on file extension
                     rx.cond(
-                        filename.contains(".xlsx"),
+                        filename.contains(  # pyright: ignore[reportAttributeAccessIssue]
+                            ".xlsx"
+                        ),
                         rx.badge("XLSX", color_scheme="green", variant="soft"),
                         rx.badge("CSV", color_scheme="blue", variant="soft"),
                     ),
@@ -153,8 +161,8 @@ def uploaded_file_card(filename: rx.Var[str]) -> rx.Component:
                         padding_x="2",
                     ),
                     rx.foreach(
-                        FileInputState.file_columns[filename],
-                        lambda col: column_mapping_row(filename, col),
+                        FileInputState.get_column_mappings,
+                        lambda col_map: column_mapping_row(filename, col_map),
                     ),
                     width="100%",
                     spacing="2",
@@ -172,17 +180,20 @@ def uploaded_file_card(filename: rx.Var[str]) -> rx.Component:
     )
 
 
-def column_mapping_row(filename: rx.Var[str], col: rx.Var[str]) -> rx.Component:
+def column_mapping_row(filename: rx.Var[str], col_map: rx.Var[str]) -> rx.Component:
+    # TODO(B5: move to copy.py)
     return rx.hstack(
         rx.box(
-            rx.code(col, variant="soft", color_scheme="gray"),
+            rx.code(col_map, variant="soft", color_scheme="gray"),
             width="45%",
         ),
         rx.icon("arrow-right", size=14, color=rx.color("gray", 8)),
         rx.box(
             rx.input(
                 placeholder="Target column name...",
-                on_change=lambda val: FileInputState.update_mapping(filename, col, val),
+                on_change=lambda val: FileInputState.update_mapping(
+                    filename, col_map, val
+                ),
                 size="1",
                 variant="surface",
             ),
@@ -192,3 +203,6 @@ def column_mapping_row(filename: rx.Var[str], col: rx.Var[str]) -> rx.Component:
         align="center",
         padding_x="2",
     )
+
+
+__all__ = ["upload_file_area"]
