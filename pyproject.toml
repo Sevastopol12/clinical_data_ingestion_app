@@ -5,13 +5,28 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "asyncpg>=0.31.0",
-    "dotenv>=0.9.9",
     "httpx>=0.28.1",
-    "ipykernel<7",
     "openpyxl>=3.1.5",
     "pydantic>=2.13.4",
+    "pydantic-settings>=2.10.1",
     "reflex>=0.9.8",
-    "requests>=2.34.2",
-    "sqlalchemy>=2.0.52",
+    "unidecode>=1.4.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ipykernel<7",
+    "pyright>=1.1.390",
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.25.3",
+    "respx>=0.22.0",
+    "ruff>=0.11.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+exclude = [".web", ".venv"]
