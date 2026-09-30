@@ -17,26 +17,32 @@ def _freshness_chip() -> rx.Component:
     )
     chip = rx.match(
         MetricsState.freshness.state,
-        ("ok", rx.hstack(rx.text(COMMON["updated"]), moment, spacing="1")),
+        ("ok", rx.hstack(rx.text(COMMON["updated"]), moment, gap="0.25em")),
         ("never", rx.text(COMMON["not_computed"])),
         ("error", rx.text(COMMON["status_unavailable"])),
         rx.text(COMMON["loading"]),
     )
     return rx.tooltip(
-        rx.badge(chip),
+        rx.badge(
+            rx.hstack(rx.icon("refresh-cw", size=14), chip, gap="0.25em"),
+            variant="surface",
+            _hover={"cursor": "pointer"},
+            on_click=MetricsState.refresh,
+        ),
         content=MetricsState.freshness.absolute,
     )
 
 
 def header() -> rx.Component:
     return rx.hstack(
-        rx.heading(DASHBOARD["title"], size="7"),
+        rx.heading(DASHBOARD["title"], size="6", weight="bold"),
         _freshness_chip(),
         justify="between",
         align="center",
         width="100%",
-        gap="3",
+        gap="0.75em",
         flex_wrap="wrap",
+        margin_bottom="0.5em",
     )
 
 
