@@ -1,11 +1,15 @@
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, computed_field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator
 
-supported_format: dict[str, str] = {
+from data_managment_system.models.metrics import ApiDateTime
+
+MAX_FILE_BYTES = 5 * 1024 * 1024
+MAX_BATCH_FILES = 10
+SUPPORTED_FORMATS: dict[str, str] = {
     "csv": "text/csv",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
@@ -21,15 +25,15 @@ class FileStatus(str, Enum):
 
 class IngestionCreate(BaseModel):
     filename: str
-    content: bytes | None = None
+    content: bytes | None = Field(default=None, exclude=True)
     facility_id: UUID
 
     @field_validator("filename")
     @classmethod
     def validate_filename(cls, filename: str) -> str:
         extension = Path(filename).suffix.lstrip(".").lower()
-        if extension not in supported_format:
-            supported = ", ".join(f".{item}" for item in supported_format)
+        if extension not in SUPPORTED_FORMATS:
+            supported = ", ".join(f".{item}" for item in SUPPORTED_FORMATS)
             raise ValueError(
                 f"Unsupported file extension '.{extension}'. Supported extensions: {supported}"
             )
@@ -38,14 +42,15 @@ class IngestionCreate(BaseModel):
     @computed_field
     @property
     def content_type(self) -> str:
-        return supported_format[Path(self.filename).suffix.lstrip(".").lower()]
+        return SUPPORTED_FORMATS[Path(self.filename).suffix.lstrip(".").lower()]
 
 
 class IngestionComplete(BaseModel):
     id: UUID
+    facility_id: UUID
     content_hash: str
     size_bytes: int | None = None
-    mappings: dict[str, str] | None = None
+    mappings: dict[str, Any] | None = None
 
 
 class IngestionResponse(BaseModel):
@@ -62,12 +67,7 @@ class IngestionResponse(BaseModel):
     accepted_row_count: int = 0
     rejected_row_count: int = 0
 
-    created_at: datetime
-
-
-class IngestionDetail(BaseModel):
-    response: IngestionResponse
-    metadata: IngestionCreate
+    created_at: ApiDateTime
 
 
 class MappingRequest(BaseModel):

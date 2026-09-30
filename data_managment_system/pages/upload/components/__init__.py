@@ -1,3 +1,3 @@
-from .file_input import upload_file_area
+from .file_input import upload_panel
 
-__all__ = ["upload_file_area"]
+__all__ = ["upload_panel"]

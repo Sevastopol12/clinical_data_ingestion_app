@@ -1,9 +1,15 @@
 import base64
-from asyncio import Semaphore, create_task, gather
+import logging
+from asyncio import Semaphore, gather
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
+from enum import StrEnum
 from hashlib import sha3_256
-from typing import cast
+from typing import Any
+from urllib.parse import quote
+from uuid import UUID
 
-from httpx import AsyncClient, HTTPError, HTTPStatusError, Response
+import httpx
 
 from data_managment_system.config import settings
 from data_managment_system.models import (
@@ -15,153 +21,193 @@ from data_managment_system.models import (
     MappingResponse,
 )
 
-
-def encode_content(raw_bytes: bytes) -> str:
-    return base64.urlsafe_b64encode(raw_bytes).decode("utf-8")
-
-
-# TODO(verify D5): content_hash contract
-def hash_content(encoded_bytes: str) -> str:
-    sha_object = sha3_256()
-    sha_object.update(encoded_bytes.encode())
-    return sha_object.hexdigest()
+logger = logging.getLogger(__name__)
+StageCallback = Callable[[str, str], Awaitable[None]]
 
 
-# Request presigned url
-async def request_presigned_url(
-    client: AsyncClient, file: IngestionCreate
-) -> IngestionResponse:
-    response = await client.post(
-        url=settings.request_upload,
-        # TODO(verify D6): facility_id remains out of this HTTP body.
-        json={"filename": file.filename, "content_type": file.content_type},
-        timeout=30,
+class FailureStage(StrEnum):
+    PRESIGN = "presign"
+    STORAGE = "storage"
+    RECORD = "record"
+
+
+@dataclass(frozen=True)
+class UploadJob:
+    filename: str
+    content: bytes
+    mappings: dict[str, str | None]
+    ingestion_id: UUID | None = None
+
+
+@dataclass(frozen=True)
+class FileOutcome:
+    filename: str
+    ok: bool
+    failed_stage: FailureStage | None
+    ingestion_id: UUID | None
+
+
+def hash_content(raw_bytes: bytes) -> str:
+    encoded = base64.urlsafe_b64encode(raw_bytes).decode("utf-8")
+    return sha3_256(encoded.encode("utf-8")).hexdigest()
+
+
+def _headers(context: Any) -> dict[str, str]:
+    token = getattr(context, "access_token", None)
+    return {"Authorization": f"Bearer {token}"} if token is not None else {}
+
+
+def _log_failure(stage: FailureStage, exc: BaseException, index: int) -> None:
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    logger.warning(
+        "upload stage failed",
+        extra={
+            "stage": stage.value,
+            "exception_type": type(exc).__name__,
+            "status_code": status,
+            "file_index": index,
+        },
     )
-    response.raise_for_status()
-    return IngestionResponse.model_validate(response.json())
 
 
-async def storage_upload(
-    client: AsyncClient, connection_response: IngestionResponse, file: IngestionCreate
-) -> IngestionResponse:
-    # Load file
-    try:
-        result = await client.put(
-            connection_response.presigned_url or "",
-            content=file.content,
-            headers={"Content-Type": file.content_type},
-            timeout=120,
+async def _submit_one(
+    client: httpx.AsyncClient,
+    semaphore: Semaphore,
+    job: UploadJob,
+    context: Any,
+    on_stage: StageCallback,
+    index: int,
+) -> FileOutcome:
+    async with semaphore:
+        ingestion_id = job.ingestion_id
+        stage = (
+            FailureStage.RECORD if ingestion_id is not None else FailureStage.PRESIGN
         )
+        try:
+            if ingestion_id is None:
+                await on_stage(job.filename, "presigning")
+                create = IngestionCreate(
+                    filename=job.filename,
+                    content=job.content,
+                    facility_id=context.facility_id,
+                )
+                response = await client.post(
+                    settings.request_upload,
+                    json=create.model_dump(mode="json"),
+                    headers=_headers(context),
+                    timeout=30,
+                )
+                response.raise_for_status()
+                presign = IngestionResponse.model_validate(response.json())
+                if (
+                    presign.status is not FileStatus.CREATED
+                    or not presign.presigned_url
+                ):
+                    raise ValueError("invalid presign response")
+                ingestion_id = presign.id
+                stage = FailureStage.STORAGE
+                await on_stage(job.filename, "uploading")
+                storage = await client.put(
+                    presign.presigned_url,
+                    content=job.content,
+                    headers={"Content-Type": create.content_type},
+                    timeout=120,
+                )
+                storage.raise_for_status()
+            stage = FailureStage.RECORD
+            await on_stage(job.filename, "recording")
+            complete = IngestionComplete(
+                id=ingestion_id,
+                facility_id=context.facility_id,
+                content_hash=hash_content(job.content),
+                size_bytes=len(job.content),
+                mappings=job.mappings,
+            )
+            record = await client.post(
+                settings.request_record.format(file=ingestion_id),
+                json=complete.model_dump(mode="json"),
+                headers=_headers(context),
+                timeout=30,
+            )
+            record.raise_for_status()
+            return FileOutcome(job.filename, True, None, ingestion_id)
+        except Exception as exc:  # noqa: BLE001
+            _log_failure(stage, exc, index)
+            return FileOutcome(job.filename, False, stage, ingestion_id)
 
-        result.raise_for_status()
 
-    except HTTPStatusError as exc:
-        connection_response.status = FileStatus.ERROR
-        connection_response.error_code = str(
-            exc.response.status_code
-        )  # TODO(B4): error_code is typed as str
-        connection_response.error_message = str(exc)
-
-    except HTTPError as exc:
-        connection_response.status = FileStatus.ERROR
-        connection_response.error_code = None
-        connection_response.error_message = str(exc)
-
-    finally:  # TODO(B4): do not return from finally
-        return connection_response  # noqa: B012
-
-
-async def keep_upload_record(client: AsyncClient, file: IngestionComplete) -> Response:
-    # Record file load
-    response = await client.post(
-        url=settings.request_record.format(file=file.id),
-        json=file.model_dump(mode="json"),
-        timeout=30,
-    )
-
-    return response
-
-
-async def fetch_column_mapping(
-    client: AsyncClient, request: MappingRequest
-) -> MappingResponse:
-    response = await client.post(
-        url=settings.request_column_mapping.format(filename=request.filename),
-        json=request.model_dump(),
-        timeout=15,
-    )
-    response.raise_for_status()
-    return MappingResponse.model_validate(response.json())
-
-
-async def _load_to_storage(
-    files: list[IngestionCreate],
-) -> list[IngestionResponse | Exception]:
-    async with (  # noqa: SIM117
-        Semaphore(  # TODO(B4): acquire the semaphore inside each task
-            5
+async def submit_batch(
+    jobs: list[UploadJob],
+    context: Any,
+    on_stage: StageCallback,
+    *,
+    concurrency: int = 5,
+) -> list[FileOutcome]:
+    semaphore = Semaphore(concurrency)
+    async with httpx.AsyncClient() as client:
+        results = await gather(
+            *(
+                _submit_one(client, semaphore, job, context, on_stage, index)
+                for index, job in enumerate(jobs)
+            ),
+            return_exceptions=True,
         )
-    ):
-        async with AsyncClient() as client:
-            connection_requests = [
-                request_presigned_url(client=client, file=file) for file in files
-            ]
-            connection_responses = (
-                await gather(  # TODO(B4): preserve per-file exceptions
-                    *connection_requests
+    outcomes: list[FileOutcome] = []
+    for index, result in enumerate(results):
+        if isinstance(result, FileOutcome):
+            outcomes.append(result)
+        else:
+            outcomes.append(
+                FileOutcome(
+                    jobs[index].filename,
+                    False,
+                    FailureStage.RECORD,
+                    jobs[index].ingestion_id,
                 )
             )
-            upload_tasks = [
-                storage_upload(client=client, file=file, connection_response=response)
-                for file, response in zip(files, connection_responses)
-            ]
-            results = await gather(*upload_tasks, return_exceptions=True)
+    return outcomes
 
+
+async def _fetch_mapping_one(
+    client: httpx.AsyncClient, semaphore: Semaphore, request: MappingRequest
+) -> MappingResponse | None:
+    async with semaphore:
+        try:
+            response = await client.post(
+                settings.request_column_mapping.format(
+                    filename=quote(request.filename, safe="")
+                ),
+                json=request.model_dump(mode="json"),
+                timeout=15,
+            )
+            response.raise_for_status()
+            result = MappingResponse.model_validate(response.json())
+            return result if result.filename == request.filename else None
+        except Exception as exc:  # noqa: BLE001
+            _log_failure(FailureStage.RECORD, exc, 0)
+            return None
+
+
+async def fetch_mapping_suggestions(
+    requests: list[MappingRequest], *, concurrency: int = 5
+) -> list[MappingResponse | None]:
+    semaphore = Semaphore(concurrency)
+    async with httpx.AsyncClient() as client:
+        results = await gather(
+            *(_fetch_mapping_one(client, semaphore, request) for request in requests),
+            return_exceptions=True,
+        )
     return [
-        result if isinstance(result, Exception) else cast(IngestionResponse, result)
-        for result in results
+        result if isinstance(result, MappingResponse) else None for result in results
     ]
 
 
-async def _record_file(files: list[IngestionComplete]) -> None:
-    async with Semaphore(5), AsyncClient() as client:
-        tasks = [
-            create_task(keep_upload_record(client=client, file=file)) for file in files
-        ]
-        await gather(*tasks)  # TODO(B4): preserve per-file exceptions
-
-
-async def _fetch_all_column_mappings(
-    map_requests: list[MappingRequest],
-) -> list[MappingResponse]:
-    semaphore = Semaphore(5)
-
-    async with AsyncClient() as client:
-
-        async def fetch(request: MappingRequest) -> MappingResponse:
-            async with semaphore:
-                return await fetch_column_mapping(client, request)
-
-        responses = await gather(
-            *(fetch(request) for request in map_requests),
-            return_exceptions=True,
-        )
-
-    results: list[MappingResponse] = []
-    for result in responses:
-        if isinstance(result, MappingResponse):
-            results.append(result)
-    return results
-
-
 __all__ = [
-    "_fetch_all_column_mappings",
-    "_load_to_storage",
-    "_record_file",
-    "encode_content",
-    "fetch_column_mapping",
+    "FailureStage",
+    "FileOutcome",
+    "StageCallback",
+    "UploadJob",
+    "fetch_mapping_suggestions",
     "hash_content",
-    "keep_upload_record",
-    "request_presigned_url",
-    "storage_upload",
+    "submit_batch",
 ]
