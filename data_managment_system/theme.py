@@ -4,7 +4,7 @@ import reflex as rx
 PAGE_BACKGROUND = "#000000"
 TEXT_PRIMARY = "#e5e7eb"
 TEXT_MUTED = "#a1a1aa"
-SURFACE_BACKGROUND = "rgba(24, 24, 27, 0.94)"
+SURFACE_BACKGROUND = "rgba(24, 24, 27, 0.72)"
 
 # Clinical status only: green, amber, orange, and red are reserved for clinical status.
 SEVERITY_RAMP = {
@@ -20,6 +20,17 @@ BADGE_TONES = {
 }
 
 FONT_FAMILY = "Cabin, system-ui, sans-serif"
+PAGE_MAX_WIDTH = "1200px"
+SECTION_GAP = "1em"
+CARD_STYLE = {
+    "background": "transparent",
+    "border": "1px solid var(--gray-a5)",
+    "border_radius": "0.875em",
+    "padding": "1.25em",
+    "box_sizing": "border-box",
+    "transition": "border-color 150ms ease",
+    "_hover": {"border_color": "var(--accent-a7)"},
+}
 STYLESHEETS = [
     "https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400..700;1,400..700&display=swap"
 ]
@@ -39,6 +50,13 @@ _BLOB_CONFIG = (
     ("35vw", "5%", "10%", "0s"),
     ("45vw", "35%", "55%", "-5s"),
     ("30vw", "60%", "15%", "-10s"),
+)
+
+PAGE_GLOW = (
+    "radial-gradient(60vw 45vh at 8% 0%, rgba(139, 92, 246, 0.30), transparent 65%), "
+    "radial-gradient(50vw 40vh at 92% 18%, rgba(109, 40, 217, 0.24), transparent 65%), "
+    "radial-gradient(60vw 45vh at 50% 100%, rgba(167, 139, 250, 0.16), transparent 65%), "
+    f"{PAGE_BACKGROUND}"
 )
 
 
@@ -98,7 +116,7 @@ def create_background() -> rx.Component:
             width="100%",
             height="100%",
             overflow="hidden",
-            z_index="-1",
+            z_index="1",
             pointer_events="none",
             aria_hidden="true",
         ),

@@ -9,6 +9,7 @@ app = rx.App(
         "font_family": FONT_FAMILY,
         "background_color": PAGE_BACKGROUND,
         "color": TEXT_PRIMARY,
+        ".radix-themes": {"--cursor-button": "pointer"},
     },
     stylesheets=STYLESHEETS,
 )
