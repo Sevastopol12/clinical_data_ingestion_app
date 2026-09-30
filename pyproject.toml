@@ -30,3 +30,6 @@ pythonpath = ["."]
 [tool.pyright]
 typeCheckingMode = "standard"
 exclude = [".web", ".venv"]
+
+[tool.ruff]
+extend-exclude = ["docs", ".uv-cache", ".venv", ".web"]
