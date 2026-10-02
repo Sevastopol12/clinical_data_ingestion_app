@@ -1,10 +1,15 @@
 import reflex as rx
 
-from .pages import landing_index
+from . import pages  # noqa: F401
+from .theme import FONT_FAMILY, PAGE_BACKGROUND, STYLESHEETS, TEXT_PRIMARY, THEME
 
 app = rx.App(
-    style={"font_family": "Cabin"},
-    stylesheets=[
-        "https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400..700;1,400..700&family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap"
-    ],
+    theme=THEME,
+    style={
+        "font_family": FONT_FAMILY,
+        "background_color": PAGE_BACKGROUND,
+        "color": TEXT_PRIMARY,
+        ".radix-themes": {"--cursor-button": "pointer"},
+    },
+    stylesheets=STYLESHEETS,
 )

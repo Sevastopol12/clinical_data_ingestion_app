@@ -1,4 +1,3 @@
-from .landing import index as landing_index
+from .dashboard import index as dashboard_index
 
-
-__all__ = ["landing_index"]
+__all__ = ["dashboard_index"]
