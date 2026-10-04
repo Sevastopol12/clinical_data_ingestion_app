@@ -4,6 +4,7 @@ import reflex as rx
 
 from data_managment_system.copy import COMMON, DASHBOARD
 from data_managment_system.states.metrics import MetricsState
+from data_managment_system.theme import DESKTOP_HEADER_GAP, responsive
 
 DISPLAY_TZ = "Asia/Ho_Chi_Minh"
 
@@ -26,6 +27,7 @@ def _freshness_chip() -> rx.Component:
         rx.badge(
             rx.hstack(rx.icon("refresh-cw", size=14), chip, gap="0.25em"),
             variant="surface",
+            size="1",
             _hover={"cursor": "pointer"},
             on_click=MetricsState.refresh,
         ),
@@ -35,14 +37,19 @@ def _freshness_chip() -> rx.Component:
 
 def header() -> rx.Component:
     return rx.hstack(
-        rx.heading(DASHBOARD["title"], size="6", weight="bold"),
+        rx.heading(
+            DASHBOARD["title"],
+            size="7",
+            weight="bold",
+            letter_spacing="-0.02em",
+        ),
         _freshness_chip(),
         justify="between",
         align="center",
         width="100%",
         gap="0.75em",
         flex_wrap="wrap",
-        margin_bottom="0.5em",
+        margin_bottom=responsive("0.5em", lg=DESKTOP_HEADER_GAP),
     )
 
 

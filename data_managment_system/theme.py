@@ -1,3 +1,5 @@
+from typing import Any
+
 import reflex as rx
 
 # Palette tokens live here so pages and components do not carry CSS colors.
@@ -6,22 +8,26 @@ TEXT_PRIMARY = "#e5e7eb"
 TEXT_MUTED = "#a1a1aa"
 SURFACE_BACKGROUND = "rgba(24, 24, 27, 0.72)"
 
-# Clinical status only: green, amber, orange, and red are reserved for clinical status.
+# Clinical status only: green, yellow, amber, orange, and red are reserved for clinical status.
 SEVERITY_RAMP = {
     "green": "#22c55e",
+    "yellow": "#fde047",
     "amber": "#f59e0b",
     "orange": "#f97316",
     "red": "#ef4444",
 }
 
-BADGE_TONES = {
-    "crisis": SEVERITY_RAMP["red"],
-    "muted": TEXT_MUTED,
+BP_STAGE_COLORS = {
+    "normal": SEVERITY_RAMP["green"],
+    "elevated": SEVERITY_RAMP["yellow"],
+    "stage1": SEVERITY_RAMP["amber"],
+    "stage2": SEVERITY_RAMP["orange"],
+    "severe": SEVERITY_RAMP["red"],
 }
 
 FONT_FAMILY = "Cabin, system-ui, sans-serif"
-PAGE_MAX_WIDTH = "1200px"
-SECTION_GAP = "1em"
+PAGE_MAX_WIDTH = "1600px"
+SECTION_GAP = "0.75em"
 CARD_STYLE = {
     "background": "transparent",
     "border": "1px solid var(--gray-a5)",
@@ -30,6 +36,65 @@ CARD_STYLE = {
     "box_sizing": "border-box",
     "transition": "border-color 150ms ease",
     "_hover": {"border_color": "var(--accent-a7)"},
+}
+DASHBOARD_GAP = "0.75em"
+# Desktop spacing breakpoint -> lg
+SPACING_BREAKPOINT = "lg"
+
+
+def responsive(initial: str, **by_breakpoint: str) -> Any:
+    """Build an ascending responsive value map with carried-forward values."""
+    breakpoint_names = ("initial", "xs", "sm", "md", "lg", "xl")
+    unknown = set(by_breakpoint) - set(breakpoint_names[1:])
+    if unknown:
+        raise ValueError(f"Unknown breakpoint(s): {', '.join(sorted(unknown))}")
+
+    values: dict[str, str] = {"initial": initial}
+    previous = initial
+    for name in breakpoint_names[1:]:
+        previous = by_breakpoint.get(name, previous)
+        values[name] = previous
+    return rx.breakpoints(
+        initial=values["initial"],
+        xs=values["xs"],
+        sm=values["sm"],
+        md=values["md"],
+        lg=values["lg"],
+        xl=values["xl"],
+    )
+
+
+# Top of page to title -> 3em
+DESKTOP_PAGE_PADDING_TOP = "1.5em"
+# Left and right page margin -> 5em
+DESKTOP_PAGE_PADDING_X = "5em"
+# Title to row 1 -> 2em
+DESKTOP_HEADER_GAP = "1em"
+# Gap between cards of a row -> 3em
+DESKTOP_COLUMN_GAP = "2em"
+# Patient Mix to Glucose / HbA1c -> 2em
+DESKTOP_STACK_GAP = "1em"
+# Visual gap between sections -> 4em
+DESKTOP_SECTION_GAP = "3em"
+CARD_PADDING_COMPACT = "0.9em"
+CARD_BODY_GAP = "0.6em"
+DQ_ISSUE_COLUMN_GAP = "2.5em"
+KPI_MIN_HEIGHT = "8em"
+RANKING_MAX_HEIGHT = "9.5em"
+TABLE_CELL_PADDING_Y = "0.35em"
+PATIENT_ROW_MAX_HEIGHT = "6em"
+PERIOD_IDLE_BG = "var(--gray-a3)"
+PERIOD_SELECTED_BG = "var(--accent-a5)"
+FLOAT_SHADOW = "0 0.15em 0.35em rgba(0, 0, 0, 0.18)"
+FLOAT_SHADOW_HOVER = "0 0.2em 0.4em rgba(0, 0, 0, 0.22)"
+FLOAT_SHADOW_SELECTED = "0 0.25em 0.5em rgba(124, 58, 237, 0.28)"
+DASHBOARD_CARD_STYLE = {**CARD_STYLE, "padding": CARD_PADDING_COMPACT}
+SURFACE_ROW_STYLE = {
+    "background": "var(--gray-a2)",
+    "border": "1px solid var(--gray-a4)",
+    "border_radius": "0.5em",
+    "padding": "0.5em 0.75em",
+    "box_sizing": "border-box",
 }
 STYLESHEETS = [
     "https://fonts.googleapis.com/css2?family=Cabin:ital,wght@0,400..700;1,400..700&display=swap"

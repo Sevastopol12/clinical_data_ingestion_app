@@ -1,3 +1,4 @@
+from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -29,6 +30,7 @@ class MappingRowVM(BaseModel):
     source: str
     target: str = ""
     error: str = ""
+    warning: str = ""
 
 
 class FileVM(BaseModel):
@@ -41,6 +43,7 @@ class FileVM(BaseModel):
     failure_stage: str = ""
     mapping_pending: bool = False
     rows: list[MappingRowVM] = Field(default_factory=list)
+    warning_count: int = 0
 
 
 def unique_sources(headers: Sequence[str]) -> list[str]:
@@ -88,15 +91,32 @@ def validate_rows(rows: Sequence[MappingRowVM]) -> list[MappingRowVM]:
         except ValueError:
             normalized.append(None)
             errors.append("empty-normalized")
-    for index, value in enumerate(normalized):
-        if value is not None and normalized.count(value) > 1:
-            errors[index] = "duplicate-target"
-    return [row.model_copy(update={"error": error}) for row, error in zip(rows, errors)]
+    counts = Counter(value for value in normalized if value is not None)
+    return [
+        row.model_copy(
+            update={
+                "error": error,
+                "warning": "duplicate-target"
+                if value is not None and counts[value] > 1
+                else "",
+            }
+        )
+        for row, value, error in zip(rows, normalized, errors)
+    ]
 
 
 def to_record_mappings(rows: Sequence[MappingRowVM]) -> dict[str, str | None]:
     valid = validate_rows(rows)
     return {row.source: normalize_target(row.target) for row in valid if not row.error}
+
+
+def count_warnings(rows: Sequence[MappingRowVM]) -> int:
+    return sum(bool(row.warning) for row in rows)
+
+
+def validate_file(file: FileVM) -> FileVM:
+    rows = validate_rows(file.rows)
+    return file.model_copy(update={"rows": rows, "warning_count": count_warnings(rows)})
 
 
 def apply_suggestions(
@@ -123,9 +143,11 @@ __all__ = [
     "MappingRowVM",
     "admit_files",
     "apply_suggestions",
+    "count_warnings",
     "format_file_size",
     "normalize_target",
     "to_record_mappings",
     "unique_sources",
+    "validate_file",
     "validate_rows",
 ]

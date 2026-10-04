@@ -11,6 +11,7 @@ from data_managment_system.models.ingestion import (
     SUPPORTED_FORMATS,
 )
 from data_managment_system.states.upload import FileInputState
+from data_managment_system.theme import responsive
 
 UPLOAD_ID = "upload_files"
 
@@ -97,7 +98,11 @@ def _mapping_row(
             rx.input(
                 value=row_any.target,
                 placeholder=UPLOAD["target_placeholder"],
-                color_scheme=rx.cond(row_any.error != "", "red", "gray"),
+                color_scheme=rx.cond(
+                    row_any.error != "",
+                    "red",
+                    rx.cond(row_any.warning != "", "yellow", "gray"),
+                ),
                 disabled=FileInputState.is_submitting | mapping_pending,
                 on_change=lambda value: FileInputState.set_target(
                     file_any, row_any.source, value
@@ -110,15 +115,28 @@ def _mapping_row(
             align="center",
             width="100%",
         ),
-        rx.text(
-            rx.match(
-                row_any.error,
-                ("empty-normalized", UPLOAD["err_target_empty"]),
-                ("duplicate-target", UPLOAD["err_target_duplicate"]),
-                "",
+        rx.match(
+            row_any.error,
+            (
+                "empty-normalized",
+                rx.text(
+                    UPLOAD["err_target_empty"],
+                    color=rx.color("red", 11),
+                    size="1",
+                ),
             ),
-            color=rx.color("red", 11),
-            size="1",
+            rx.match(
+                row_any.warning,
+                (
+                    "duplicate-target",
+                    rx.text(
+                        UPLOAD["warn_target_duplicate"],
+                        color=rx.color("yellow", 11),
+                        size="1",
+                    ),
+                ),
+                rx.fragment(),
+            ),
         ),
         width="100%",
         gap="0.25em",
@@ -248,10 +266,25 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
                 gap="0.5em",
                 align="center",
             ),
-            rx.text(
-                UPLOAD["columns_count"].format(count=file_any.rows.length()),
-                size="1",
-                color=rx.color("gray", 11),
+            rx.vstack(
+                rx.text(
+                    UPLOAD["columns_count"].format(count=file_any.rows.length()),
+                    size="1",
+                    color=rx.color("gray", 11),
+                ),
+                rx.cond(
+                    ~is_expanded & (file_any.warning_count > 0),
+                    rx.text(
+                        UPLOAD["warn_columns_shared"].format(
+                            count=file_any.warning_count
+                        ),
+                        size="1",
+                        color=rx.color("yellow", 11),
+                    ),
+                    rx.fragment(),
+                ),
+                gap="0.25em",
+                align="start",
             ),
         ),
         rx.cond(is_expanded, _mapping_block(file_any), rx.fragment()),
@@ -342,17 +375,17 @@ def upload_panel() -> rx.Component:
                 disabled=FileInputState.is_submitting | ~FileInputState.can_submit,
                 on_click=FileInputState.submit_uploads,
                 _hover={"cursor": "pointer"},
-                width={"initial": "100%", "sm": "auto"},
+                width=responsive("100%", sm="auto"),
             ),
             gap="0.5em",
-            width={"initial": "100%", "sm": "auto"},
+            width=responsive("100%", sm="auto"),
             flex_wrap="wrap",
         ),
         width="100%",
         align="center",
         gap="1em",
         flex_wrap="wrap",
-        flex_direction={"initial": "column", "sm": "row"},
+        flex_direction=responsive("column", sm="row"),
         padding="1em 1.5em",
         background=rx.color("gray", 2),
         border_top=f"1px solid {rx.color('gray', 5)}",

@@ -55,14 +55,10 @@ class BackendClient:
         self,
         path: str,
         params: Mapping[str, str] | None = None,
-        *,
-        scope_facility: bool = True,
     ) -> Any:
         context = self._context()
         request_params = dict(params or {})
         headers: dict[str, str] = {}
-        if scope_facility:
-            request_params["facility_id"] = str(context.facility_id)
         if context.access_token is not None:
             headers["Authorization"] = f"Bearer {context.access_token}"
 

@@ -88,14 +88,17 @@ def upload_dialog() -> rx.Component:
 
 def upload_fab() -> rx.Component:
     """Build the fixed dashboard button that opens the upload dialog."""
-    return rx.icon_button(
-        rx.icon("upload"),
+    return rx.button(
+        UPLOAD["upload"],
+        rx.icon("upload", size=18),
+        gap="0.5em",
         aria_label=UPLOAD["fab_label"],
         on_click=FileInputState.open_dialog,
         position="fixed",
         bottom="1.5em",
         right="1.5em",
-        radius="full",
+        radius="large",
+        size="4",
         z_index=10,
         _hover={"cursor": "pointer"},
     )

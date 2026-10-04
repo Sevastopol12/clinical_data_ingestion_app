@@ -6,12 +6,10 @@ from data_managment_system import copy
 from data_managment_system.models.metrics import (
     ComorbidityMetric,
     DataQualityMetric,
-    Grain,
     MetricsStatus,
     PeriodSummaryMetric,
 )
 from data_managment_system.utils.format import (
-    bucket_label,
     format_count,
     format_datetime_abs,
     format_glucose,
@@ -36,20 +34,12 @@ def _latest[MetricT: (PeriodSummaryMetric, ComorbidityMetric, DataQualityMetric)
     return max(rows, key=lambda row: row.period_start) if rows else None
 
 
-def _period_label(
-    row: PeriodSummaryMetric | ComorbidityMetric | DataQualityMetric, grain: Grain
-) -> str:
-    end = getattr(row, "period_end", None)
-    return bucket_label(grain, row.period_start, end)
-
-
-def build_visits(rows: Sequence[PeriodSummaryMetric], grain: Grain) -> KpiCardVM | None:
+def build_visits(rows: Sequence[PeriodSummaryMetric]) -> KpiCardVM | None:
     row = _latest(rows)
     if row is None:
         return None
     empty = row.visit_count == 0
     return KpiCardVM(
-        period_label=_period_label(row, grain),
         fields=[
             FieldVM(
                 label=copy.DASHBOARD["visits"],
@@ -73,19 +63,16 @@ def build_visits(rows: Sequence[PeriodSummaryMetric], grain: Grain) -> KpiCardVM
             ),
         ],
         tiles=[],
-        empty_note=copy.COMMON["no_visits"] if empty else "",
+        empty_note="",
     )
 
 
-def build_patient_mix(
-    rows: Sequence[PeriodSummaryMetric], grain: Grain
-) -> KpiCardVM | None:
+def build_patient_mix(rows: Sequence[PeriodSummaryMetric]) -> KpiCardVM | None:
     row = _latest(rows)
     if row is None:
         return None
     empty = row.visit_count == 0
     return KpiCardVM(
-        period_label=_period_label(row, grain),
         fields=[
             FieldVM(
                 label=copy.DASHBOARD["hypertension"],
@@ -101,19 +88,18 @@ def build_patient_mix(
             ),
         ],
         tiles=[],
-        empty_note=copy.COMMON["no_visits"] if empty else "",
+        empty_note="",
     )
 
 
 def build_clinical_control(
-    rows: Sequence[PeriodSummaryMetric], grain: Grain
+    rows: Sequence[PeriodSummaryMetric],
 ) -> KpiCardVM | None:
     row = _latest(rows)
     if row is None:
         return None
     empty = row.visit_count == 0
     return KpiCardVM(
-        period_label=_period_label(row, grain),
         fields=[
             FieldVM(
                 label=copy.DASHBOARD["bp_control"],
@@ -131,6 +117,11 @@ def build_clinical_control(
                 tone="normal",
             ),
             TileVM(
+                label=copy.DASHBOARD["elevated"],
+                value=format_count(None if empty else row.bp_stage_elevated_count),
+                tone="elevated",
+            ),
+            TileVM(
                 label=copy.DASHBOARD["stage_1"],
                 value=format_count(None if empty else row.bp_stage_1_count),
                 tone="stage1",
@@ -141,24 +132,21 @@ def build_clinical_control(
                 tone="stage2",
             ),
             TileVM(
-                label=copy.DASHBOARD["crisis"],
-                value=format_count(None if empty else row.bp_stage_crisis_count),
-                tone="crisis",
+                label=copy.DASHBOARD["severe"],
+                value=format_count(None if empty else row.bp_stage_severe_count),
+                tone="severe",
             ),
         ],
-        empty_note=copy.COMMON["no_visits"] if empty else "",
+        empty_note="",
     )
 
 
-def build_glucose_hba1c(
-    rows: Sequence[PeriodSummaryMetric], grain: Grain
-) -> KpiCardVM | None:
+def build_glucose_hba1c(rows: Sequence[PeriodSummaryMetric]) -> KpiCardVM | None:
     row = _latest(rows)
     if row is None:
         return None
     empty = row.visit_count == 0
     return KpiCardVM(
-        period_label=_period_label(row, grain),
         fields=[
             FieldVM(
                 label=copy.DASHBOARD["average_glucose"],
@@ -178,13 +166,11 @@ def build_glucose_hba1c(
             ),
         ],
         tiles=[],
-        empty_note=copy.COMMON["no_visits"] if empty else "",
+        empty_note="",
     )
 
 
-def build_comorbidity(
-    rows: Sequence[ComorbidityMetric], grain: Grain
-) -> RankingCardVM | None:
+def build_comorbidity(rows: Sequence[ComorbidityMetric]) -> RankingCardVM | None:
     if not rows:
         return None
     latest_start = max(row.period_start for row in rows)
@@ -194,7 +180,6 @@ def build_comorbidity(
     )
     maximum = max((row.patient_count for row in latest_rows), default=0)
     return RankingCardVM(
-        period_label=bucket_label(grain, latest_start, None),
         rows=[
             BarRowVM(
                 label=row.diagnosis_label,
@@ -206,48 +191,58 @@ def build_comorbidity(
     )
 
 
-def build_data_quality(
-    rows: Sequence[DataQualityMetric], grain: Grain
-) -> DataQualityVM | None:
+def build_data_quality(rows: Sequence[DataQualityMetric]) -> DataQualityVM | None:
     row = _latest(rows)
     if row is None:
         return None
-    return DataQualityVM(
-        period_label=_period_label(row, grain),
-        fields=[
-            FieldVM(
-                label=copy.DASHBOARD["files_processed"],
-                value=format_count(row.files_processed),
-            ),
-            FieldVM(
-                label=copy.DASHBOARD["average_coverage"],
-                value=format_percent(row.avg_coverage_ratio),
-            ),
-            FieldVM(
-                label=copy.DASHBOARD["rows_seen"],
-                value=format_count(row.total_rows_seen),
-            ),
-            FieldVM(
-                label=copy.DASHBOARD["rows_accepted"],
-                value=format_count(row.accepted_rows),
-            ),
-            FieldVM(
-                label=copy.DASHBOARD["rows_flagged"],
-                value=format_count(row.flagged_rows),
-            ),
-            FieldVM(
-                label=copy.DASHBOARD["rows_rejected"],
-                value=format_count(row.rejected_rows),
-            ),
-        ],
-        issues=[
+    coverage_fields = [
+        FieldVM(
+            label=copy.DASHBOARD["files_processed"],
+            value=format_count(row.files_processed),
+        ),
+        FieldVM(
+            label=copy.DASHBOARD["average_mapping_coverage"],
+            value=format_percent(row.avg_mapping_coverage_ratio),
+        ),
+    ]
+    row_fields = [
+        FieldVM(
+            label=copy.DASHBOARD["rows_seen"],
+            value=format_count(row.total_rows_seen),
+        ),
+        FieldVM(
+            label=copy.DASHBOARD["rows_clean"],
+            value=format_count(row.accepted_clean_rows),
+        ),
+        FieldVM(
+            label=copy.DASHBOARD["rows_with_flags"],
+            value=format_count(row.accepted_with_flags_rows),
+        ),
+        FieldVM(
+            label=copy.DASHBOARD["rows_rejected"],
+            value=format_count(row.rejected_rows),
+        ),
+    ]
+    maximum = max((issue.count for issue in row.top_issue_codes), default=0)
+    issues: list[IssueRowVM] = []
+    for issue in row.top_issue_codes:
+        issue_type, separator, column = issue.code.partition(":")
+        issues.append(
             IssueRowVM(
-                label=copy.ISSUE_CODE_LABELS.get(issue.code, issue.code),
-                code=issue.code,
+                title=copy.ISSUE_CODE_LABELS.get(
+                    issue_type,
+                    issue_type.replace("_", " ").capitalize(),
+                ),
+                field=copy.FIELD_LABELS.get(column, column) if separator else "",
+                field_hint=column if separator else "",
                 count=format_count(issue.count),
+                width_pct=round(issue.count / maximum * 100) if maximum else 0,
             )
-            for issue in row.top_issue_codes
-        ],
+        )
+    return DataQualityVM(
+        coverage_fields=coverage_fields,
+        row_fields=row_fields,
+        issues=issues,
     )
 
 

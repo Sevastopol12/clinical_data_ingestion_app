@@ -22,11 +22,12 @@ from data_managment_system.utils.upload_rules import (
     MappingRowVM,
     admit_files,
     apply_suggestions,
+    count_warnings,
     format_file_size,
     normalize_target,
     to_record_mappings,
     unique_sources,
-    validate_rows,
+    validate_file,
 )
 
 logger = logging.getLogger(__name__)
@@ -235,14 +236,13 @@ class FileInputState(rx.State):
                     if suggestion is not None and suggestion.mapping is not None
                     else file.rows
                 )
-                updated[index] = file.model_copy(
-                    update={"rows": rows, "mapping_pending": False}
-                )
+                validated = validate_file(file.model_copy(update={"rows": rows}))
+                updated[index] = validated.model_copy(update={"mapping_pending": False})
             self.files = updated
 
     @rx.event
     def set_target(self, filename: str, source: str, value: str) -> None:
-        self._update_rows(filename, source, value, "")
+        self._update_rows(filename, source, value)
 
     @rx.event
     def blur_target(self, filename: str, source: str) -> None:
@@ -254,16 +254,12 @@ class FileInputState(rx.State):
             return
         try:
             value = normalize_target(row.target)
-            error = ""
         except ValueError:
             value = row.target
-            error = "empty-normalized"
-        self._update_rows(filename, source, value or "", error)
+        self._update_rows(filename, source, value or "")
         self._validate_file(filename)
 
-    def _update_rows(
-        self, filename: str, source: str, target: str, error: str | None
-    ) -> None:
+    def _update_rows(self, filename: str, source: str, target: str) -> None:
         for index, file in enumerate(self.files):
             if file.filename != filename:
                 continue
@@ -271,22 +267,23 @@ class FileInputState(rx.State):
                 row.model_copy(
                     update={
                         "target": target,
-                        **({"error": error} if error is not None else {}),
+                        "error": "",
+                        "warning": "",
                     }
                 )
                 if row.source == source
                 else row
                 for row in file.rows
             ]
-            self.files[index] = file.model_copy(update={"rows": rows})
+            self.files[index] = file.model_copy(
+                update={"rows": rows, "warning_count": count_warnings(rows)}
+            )
             return
 
     def _validate_file(self, filename: str) -> None:
         for index, file in enumerate(self.files):
             if file.filename == filename:
-                self.files[index] = file.model_copy(
-                    update={"rows": validate_rows(file.rows)}
-                )
+                self.files[index] = validate_file(file)
                 return
 
     @rx.event
@@ -335,11 +332,11 @@ class FileInputState(rx.State):
                 self.is_submitting = True
                 validated: list[FileVM] = []
                 for file in self.files:
-                    rows = validate_rows(file.rows)
+                    validated_file = validate_file(file)
                     validation_error = validation_error or any(
-                        row.error for row in rows
+                        row.error for row in validated_file.rows
                     )
-                    validated.append(file.model_copy(update={"rows": rows}))
+                    validated.append(validated_file)
                 self.files = validated
                 self.expanded_files = [
                     *self.expanded_files,

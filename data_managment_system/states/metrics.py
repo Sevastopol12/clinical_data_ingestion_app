@@ -8,7 +8,7 @@ from typing import Any, cast
 import reflex as rx
 
 from data_managment_system.copy import COMMON
-from data_managment_system.models.metrics import Grain
+from data_managment_system.models.metrics import GRAINS, Grain, PatientStateMetric
 from data_managment_system.services import metrics as metrics_service
 from data_managment_system.services.http import (
     BackendError,
@@ -17,6 +17,7 @@ from data_managment_system.services.http import (
     default_context,
     get_client,
 )
+from data_managment_system.services.metrics import MetricsScope
 from data_managment_system.utils.builders import (
     build_clinical_control,
     build_comorbidity,
@@ -26,7 +27,14 @@ from data_managment_system.utils.builders import (
     build_patient_mix,
     build_visits,
 )
-from data_managment_system.utils.patient_table import build_patient_rows
+from data_managment_system.utils.patient_table import (
+    PATIENT_LIMIT,
+    clamp_page,
+    page_count,
+    page_rows,
+    prepare_patients,
+    range_label,
+)
 from data_managment_system.utils.ttl_cache import TtlCache
 from data_managment_system.utils.view_models import (
     DataQualityVM,
@@ -39,7 +47,7 @@ from data_managment_system.utils.view_models import (
 logger = logging.getLogger(__name__)
 
 _CACHE = TtlCache(60)
-_PERIOD_BUILDERS: dict[str, Callable[[Any, Grain], Any]] = {
+_PERIOD_BUILDERS: dict[str, Callable[[Any], Any]] = {
     "visits": build_visits,
     "patient_mix": build_patient_mix,
     "clinical_control": build_clinical_control,
@@ -54,8 +62,8 @@ _CARD_ENDPOINTS = {
     "data_quality": "data-quality",
 }
 
-DEFAULT_GRAIN = "1D"
-VALID_GRAINS = ("1D", "3D", "1W", "2W", "1M")
+DEFAULT_GRAIN: Grain = "TODAY"
+VALID_GRAINS = GRAINS
 CARD_IDS = (
     "visits",
     "patient_mix",
@@ -66,47 +74,54 @@ CARD_IDS = (
 )
 
 
+def next_grain_map(current: dict[str, str], card_id: str, grain: str) -> dict[str, str]:
+    if card_id not in CARD_IDS:
+        raise ValueError("Unknown dashboard card id")
+    if grain not in VALID_GRAINS:
+        raise ValueError("Invalid dashboard grain")
+    return {**current, card_id: grain}
+
+
 class MetricsState(rx.State):
     grain_by_card: dict[str, str] = {card_id: DEFAULT_GRAIN for card_id in CARD_IDS}  # noqa: RUF012
     card_status: dict[str, str] = {card_id: "loading" for card_id in CARD_IDS}  # noqa: RUF012
-    visits: KpiCardVM = KpiCardVM(period_label="", fields=[], tiles=[], empty_note="")
-    patient_mix: KpiCardVM = KpiCardVM(
-        period_label="", fields=[], tiles=[], empty_note=""
-    )
-    clinical_control: KpiCardVM = KpiCardVM(
-        period_label="", fields=[], tiles=[], empty_note=""
-    )
-    glucose_hba1c: KpiCardVM = KpiCardVM(
-        period_label="", fields=[], tiles=[], empty_note=""
-    )
-    comorbidity: RankingCardVM = RankingCardVM(period_label="", rows=[])
-    data_quality: DataQualityVM = DataQualityVM(period_label="", fields=[], issues=[])
+    visits: KpiCardVM = KpiCardVM(fields=[], tiles=[], empty_note="")
+    patient_mix: KpiCardVM = KpiCardVM(fields=[], tiles=[], empty_note="")
+    clinical_control: KpiCardVM = KpiCardVM(fields=[], tiles=[], empty_note="")
+    glucose_hba1c: KpiCardVM = KpiCardVM(fields=[], tiles=[], empty_note="")
+    comorbidity: RankingCardVM = RankingCardVM(rows=[])
+    data_quality: DataQualityVM = DataQualityVM()
     freshness: FreshnessVM = FreshnessVM(state="loading", iso="", absolute="")
     patient_page: int = 0
-    _patients: list[PatientRowVM] = []  # noqa: RUF012
+    _patients: list[PatientStateMetric] = []  # noqa: RUF012
     _patient_total: int = 0
     patients_status: str = "loading"
+    data_quality_expanded: bool = False
+
+    @staticmethod
+    def _scope() -> MetricsScope:
+        return MetricsScope.facility(default_context().facility_id)
+
+    @rx.event
+    def toggle_data_quality(self) -> None:
+        """Toggle the Data Quality issue list. UI-only; never triggers a fetch."""
+        self.data_quality_expanded = not self.data_quality_expanded
 
     @rx.var
     def patient_page_rows(self) -> list[PatientRowVM]:
-        start = self.patient_page * 10
-        return self._patients[start : start + 10]
+        return page_rows(self._patients, self.patient_page)
 
     @rx.var
     def patient_page_count(self) -> int:
-        return max(1, (self._patient_total + 9) // 10)
+        return page_count(len(self._patients))
 
     @rx.var
     def patient_range_label(self) -> str:
-        if not self._patient_total:
-            return COMMON["empty_patient_range"]
-        start = self.patient_page * 10 + 1
-        end = min((self.patient_page + 1) * 10, self._patient_total)
-        return f"{start}-{end} of {self._patient_total}"
+        return range_label(self.patient_page, len(self._patients))
 
     @rx.var
     def patient_is_truncated(self) -> bool:
-        return self._patient_total > 500
+        return self._patient_total > PATIENT_LIMIT
 
     @rx.var
     def patient_total(self) -> int:
@@ -114,19 +129,23 @@ class MetricsState(rx.State):
 
     @rx.var
     def patient_truncated_note(self) -> str:
-        return COMMON["showing_first"].format(limit=500, total=self._patient_total)
+        return COMMON["showing_first"].format(
+            limit=f"{PATIENT_LIMIT:,}", total=f"{self._patient_total:,}"
+        )
 
     @staticmethod
-    def _cache_key(endpoint: str, grain: str) -> tuple[Any, str, str]:
-        return (default_context().facility_id, endpoint, grain)
+    def _cache_key(
+        scope: MetricsScope, endpoint: str, grain: str
+    ) -> tuple[str, str, str]:
+        return (scope.token, endpoint, grain)
 
     @staticmethod
-    def _patient_cache_key() -> tuple[Any, str]:
-        return (default_context().facility_id, "out-of-control")
+    def _patient_cache_key(scope: MetricsScope) -> tuple[str, str]:
+        return (scope.token, "out-of-control")
 
     @staticmethod
-    def _status_cache_key() -> tuple[Any, str]:
-        return (default_context().facility_id, "status")
+    def _status_cache_key() -> tuple[str]:
+        return ("status",)
 
     async def _set_card_status(self, card_id: str, status: str) -> None:
         async with self:
@@ -135,25 +154,29 @@ class MetricsState(rx.State):
     async def _load_card(self, card_id: str, grain: Grain) -> None:
         await self._set_card_status(card_id, "loading")
         client = get_client()
+        scope = self._scope()
         try:
             endpoint = _CARD_ENDPOINTS[card_id]
-            key = self._cache_key(endpoint, grain)
+            key = self._cache_key(scope, endpoint, grain)
             if endpoint == "period-summary":
                 rows = await _CACHE.get_or_fetch(
-                    key, lambda: metrics_service.fetch_period_summary(client, grain)
+                    key,
+                    lambda: metrics_service.fetch_period_summary(client, scope, grain),
                 )
                 builder = _PERIOD_BUILDERS[card_id]
             elif endpoint == "comorbidity":
                 rows = await _CACHE.get_or_fetch(
-                    key, lambda: metrics_service.fetch_comorbidity(client, grain)
+                    key,
+                    lambda: metrics_service.fetch_comorbidity(client, scope, grain),
                 )
                 builder = build_comorbidity
             else:
                 rows = await _CACHE.get_or_fetch(
-                    key, lambda: metrics_service.fetch_data_quality(client, grain)
+                    key,
+                    lambda: metrics_service.fetch_data_quality(client, scope, grain),
                 )
                 builder = build_data_quality
-            view_model = builder(rows, grain)
+            view_model = builder(rows)
         except Unavailable:
             await self._set_card_status(card_id, "503")
             return
@@ -175,12 +198,8 @@ class MetricsState(rx.State):
 
     @rx.event(background=True)
     async def set_grain(self, card_id: str, grain: str) -> None:
-        if card_id not in CARD_IDS:
-            raise ValueError("Unknown dashboard card id")
-        if grain not in VALID_GRAINS:
-            raise ValueError("Invalid dashboard grain")
         async with self:
-            self.grain_by_card = {**self.grain_by_card, card_id: grain}
+            self.grain_by_card = next_grain_map(self.grain_by_card, card_id, grain)
         await self._load_card(card_id, cast(Grain, grain))
 
     @rx.event(background=True)
@@ -188,7 +207,8 @@ class MetricsState(rx.State):
         if card_id not in CARD_IDS:
             raise ValueError("Unknown dashboard card id")
         grain = self.grain_by_card[card_id]
-        _CACHE.invalidate(self._cache_key(_CARD_ENDPOINTS[card_id], grain))
+        scope = self._scope()
+        _CACHE.invalidate(self._cache_key(scope, _CARD_ENDPOINTS[card_id], grain))
         await self._load_card(card_id, cast(Grain, grain))
 
     retry_card = retry
@@ -196,12 +216,14 @@ class MetricsState(rx.State):
     async def _load_patients(self) -> None:
         async with self:
             self.patients_status = "loading"
+        scope = self._scope()
         try:
-            key = self._patient_cache_key()
+            key = self._patient_cache_key(scope)
             patients = await _CACHE.get_or_fetch(
-                key, lambda: metrics_service.fetch_out_of_control(get_client())
+                key,
+                lambda: metrics_service.fetch_out_of_control(get_client(), scope),
             )
-            rows, total = build_patient_rows(patients)
+            rows, total = prepare_patients(patients)
         except Unavailable as exc:
             logger.error("patient table failed: %s", type(exc).__name__)
             async with self:
@@ -215,7 +237,7 @@ class MetricsState(rx.State):
         async with self:
             self._patients = rows
             self._patient_total = total
-            self.patient_page = 0
+            self.patient_page = clamp_page(self.patient_page, len(rows))
             self.patients_status = "ready" if rows else "empty"
 
     async def _load_freshness(self) -> None:
@@ -251,13 +273,13 @@ class MetricsState(rx.State):
 
     @rx.event(background=True)
     async def retry_patients(self) -> None:
-        _CACHE.invalidate(self._patient_cache_key())
+        _CACHE.invalidate(self._patient_cache_key(self._scope()))
         await self._load_patients()
 
     @rx.event
     def next_patient_page(self) -> None:
-        self.patient_page = min(self.patient_page + 1, self.patient_page_count - 1)
+        self.patient_page = clamp_page(self.patient_page + 1, len(self._patients))
 
     @rx.event
     def previous_patient_page(self) -> None:
-        self.patient_page = max(0, self.patient_page - 1)
+        self.patient_page = clamp_page(self.patient_page - 1, len(self._patients))
