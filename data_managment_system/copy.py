@@ -177,4 +177,11 @@ AUTH = {
     "logout_tooltip": "Log out",
     "logout_warning": "Signed out here, but the server could not confirm it.",
     "loading": "Loading…",
+    "brand": "Clinical Data Control Center",
+    "eyebrow": "Facility staff",
+    "headline": "Know how your facility is doing.",
+    "subhead": ("Hypertension and diabetes control metrics from your uploaded data."),
+    "show_password": "Show password",
+    "hide_password": "Hide password",
+    "footer": "Authorized facility staff only",
 }
