@@ -2,20 +2,23 @@
 
 import asyncio
 import logging
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from typing import Any, cast
 
 import reflex as rx
 
 from data_managment_system.copy import COMMON
+from data_managment_system.models.auth import SessionInfo
 from data_managment_system.models.metrics import GRAINS, Grain, PatientStateMetric
 from data_managment_system.services import metrics as metrics_service
 from data_managment_system.services.http import (
     BackendError,
     BadPayload,
+    Unauthorized,
     Unavailable,
     get_client,
 )
+from data_managment_system.states.auth import AuthState
 from data_managment_system.utils.builders import (
     build_clinical_control,
     build_comorbidity,
@@ -95,6 +98,8 @@ class MetricsState(rx.State):
     _patient_total: int = 0
     patients_status: str = "loading"
     data_quality_expanded: bool = False
+    _auth_failed: bool = False
+    _last_sid: str = ""
 
     @rx.event
     def toggle_data_quality(self) -> None:
@@ -128,57 +133,95 @@ class MetricsState(rx.State):
         )
 
     @staticmethod
-    def _cache_key(endpoint: str, grain: str) -> tuple[str, str]:
-        return (endpoint, grain)
+    def _cache_key(sid: str, endpoint: str, grain: str) -> tuple[str, str, str]:
+        return (sid, endpoint, grain)
 
     @staticmethod
-    def _patient_cache_key() -> tuple[str]:
-        return ("out-of-control",)
+    def _patient_cache_key(sid: str) -> tuple[str, str]:
+        return (sid, "out-of-control")
 
     @staticmethod
-    def _status_cache_key() -> tuple[str]:
-        return ("status",)
+    def _status_cache_key(sid: str) -> tuple[str, str]:
+        return (sid, "status")
+
+    @rx.event
+    def clear_session(self, sid: str = "") -> None:
+        target = sid or self._last_sid
+        if target:
+            _CACHE.invalidate_namespace(target)
+        self.grain_by_card = {card_id: DEFAULT_GRAIN for card_id in CARD_IDS}
+        self.card_status = {card_id: "loading" for card_id in CARD_IDS}
+        self.visits = KpiCardVM(fields=[], tiles=[], empty_note="")
+        self.patient_mix = KpiCardVM(fields=[], tiles=[], empty_note="")
+        self.clinical_control = KpiCardVM(fields=[], tiles=[], empty_note="")
+        self.glucose_hba1c = KpiCardVM(fields=[], tiles=[], empty_note="")
+        self.comorbidity = RankingCardVM(rows=[])
+        self.data_quality = DataQualityVM()
+        self.freshness = FreshnessVM(state="loading", iso="", absolute="")
+        self.patient_page = 0
+        self._patients = []
+        self._patient_total = 0
+        self.patients_status = "loading"
+        self.data_quality_expanded = False
+        self._auth_failed = False
+        self._last_sid = ""
 
     async def _set_card_status(self, card_id: str, status: str) -> None:
         async with self:
             self.card_status = {**self.card_status, card_id: status}
 
-    async def _load_card(self, card_id: str, grain: Grain) -> None:
+    async def _mark_unauthorized_card(self, card_id: str) -> None:
+        async with self:
+            self._auth_failed = True
+            self.card_status = {**self.card_status, card_id: "error"}
+
+    async def _load_card(
+        self, card_id: str, grain: Grain, session: SessionInfo
+    ) -> bool:
         await self._set_card_status(card_id, "loading")
         client = get_client()
         try:
             endpoint = _CARD_ENDPOINTS[card_id]
-            key = self._cache_key(endpoint, grain)
+            key = self._cache_key(session.sid, endpoint, grain)
             if endpoint == "period-summary":
                 rows = await _CACHE.get_or_fetch(
                     key,
-                    lambda: metrics_service.fetch_period_summary(client, grain),
+                    lambda: metrics_service.fetch_period_summary(
+                        client, grain, access_token=session.token
+                    ),
                 )
                 builder = _PERIOD_BUILDERS[card_id]
             elif endpoint == "comorbidity":
                 rows = await _CACHE.get_or_fetch(
                     key,
-                    lambda: metrics_service.fetch_comorbidity(client, grain),
+                    lambda: metrics_service.fetch_comorbidity(
+                        client, grain, access_token=session.token
+                    ),
                 )
                 builder = build_comorbidity
             else:
                 rows = await _CACHE.get_or_fetch(
                     key,
-                    lambda: metrics_service.fetch_data_quality(client, grain),
+                    lambda: metrics_service.fetch_data_quality(
+                        client, grain, access_token=session.token
+                    ),
                 )
                 builder = build_data_quality
             view_model = builder(rows)
+        except Unauthorized:
+            await self._mark_unauthorized_card(card_id)
+            return True
         except Unavailable:
             await self._set_card_status(card_id, "503")
-            return
+            return False
         except (BackendError, BadPayload) as exc:
             logger.error("metrics card failed: %s", type(exc).__name__)
             await self._set_card_status(card_id, "error")
-            return
+            return False
         except Exception as exc:  # noqa: BLE001
             logger.error("metrics card failed: %s", type(exc).__name__)
             await self._set_card_status(card_id, "error")
-            return
+            return False
 
         async with self:
             setattr(self, card_id, view_model or getattr(self, card_id))
@@ -186,74 +229,119 @@ class MetricsState(rx.State):
                 **self.card_status,
                 card_id: "empty" if view_model is None else "ready",
             }
+        return False
 
     @rx.event(background=True)
-    async def set_grain(self, card_id: str, grain: str) -> None:
+    async def set_grain(self, card_id: str, grain: str) -> AsyncIterator[Any]:
         async with self:
             self.grain_by_card = next_grain_map(self.grain_by_card, card_id, grain)
-        await self._load_card(card_id, cast(Grain, grain))
+            session = (await self.get_state(AuthState)).current_session()
+            if session is None:
+                return
+            self._last_sid = session.sid
+            self._auth_failed = False
+        auth_failed = await self._load_card(card_id, cast(Grain, grain), session)
+        if auth_failed:
+            yield AuthState.handle_unauthorized
 
     @rx.event(background=True)
-    async def retry(self, card_id: str) -> None:
+    async def retry(self, card_id: str) -> AsyncIterator[Any]:
         if card_id not in CARD_IDS:
             raise ValueError("Unknown dashboard card id")
-        grain = self.grain_by_card[card_id]
-        _CACHE.invalidate(self._cache_key(_CARD_ENDPOINTS[card_id], grain))
-        await self._load_card(card_id, cast(Grain, grain))
+        async with self:
+            session = (await self.get_state(AuthState)).current_session()
+            if session is None:
+                return
+            self._last_sid = session.sid
+            self._auth_failed = False
+            grain = self.grain_by_card[card_id]
+        _CACHE.invalidate(self._cache_key(session.sid, _CARD_ENDPOINTS[card_id], grain))
+        auth_failed = await self._load_card(card_id, cast(Grain, grain), session)
+        if auth_failed:
+            yield AuthState.handle_unauthorized
 
     retry_card = retry
 
-    async def _load_patients(self) -> None:
+    async def _load_patients(self, session: SessionInfo) -> bool:
         async with self:
             self.patients_status = "loading"
         try:
-            key = self._patient_cache_key()
+            key = self._patient_cache_key(session.sid)
             patients = await _CACHE.get_or_fetch(
                 key,
-                lambda: metrics_service.fetch_out_of_control(get_client()),
+                lambda: metrics_service.fetch_out_of_control(
+                    get_client(), access_token=session.token
+                ),
             )
             rows, total = prepare_patients(patients)
+        except Unauthorized:
+            async with self:
+                self._auth_failed = True
+                self.patients_status = "error"
+            return True
         except Unavailable as exc:
             logger.error("patient table failed: %s", type(exc).__name__)
             async with self:
                 self.patients_status = "503"
-            return
+            return False
         except Exception as exc:  # noqa: BLE001
             logger.error("patient table failed: %s", type(exc).__name__)
             async with self:
                 self.patients_status = "error"
-            return
+            return False
         async with self:
             self._patients = rows
             self._patient_total = total
             self.patient_page = clamp_page(self.patient_page, len(rows))
             self.patients_status = "ready" if rows else "empty"
+        return False
 
-    async def _load_freshness(self) -> None:
+    async def _load_freshness(self, session: SessionInfo) -> bool:
         try:
             status = await _CACHE.get_or_fetch(
-                self._status_cache_key(),
-                lambda: metrics_service.fetch_status(get_client()),
+                self._status_cache_key(session.sid),
+                lambda: metrics_service.fetch_status(
+                    get_client(), access_token=session.token
+                ),
             )
             freshness = build_freshness(status, failed=False)
+        except Unauthorized:
+            async with self:
+                self._auth_failed = True
+            freshness = build_freshness(None, failed=True)
+            async with self:
+                self.freshness = freshness
+            return True
         except Exception as exc:  # noqa: BLE001
             logger.error("freshness failed: %s", type(exc).__name__)
             freshness = build_freshness(None, failed=True)
         async with self:
             self.freshness = freshness
+        return False
 
     @rx.event(background=True)
-    async def load_all(self) -> None:
+    async def load_all(self) -> AsyncIterator[Any]:
         async with self:
             self.card_status = {card_id: "loading" for card_id in CARD_IDS}
-        grains: dict[str, Grain] = {
-            card_id: cast(Grain, self.grain_by_card[card_id]) for card_id in CARD_IDS
-        }
-        await asyncio.gather(
-            *(self._load_card(card_id, grains[card_id]) for card_id in CARD_IDS),
-            self._load_patients(),
-            self._load_freshness(),
+            session = (await self.get_state(AuthState)).current_session()
+            if session is None:
+                return
+            self._last_sid = session.sid
+            self._auth_failed = False
+            grains: dict[str, Grain] = {
+                card_id: cast(Grain, self.grain_by_card[card_id])
+                for card_id in CARD_IDS
+            }
+        results = await asyncio.gather(
+            *(
+                self._load_card(card_id, grains[card_id], session)
+                for card_id in CARD_IDS
+            ),
+            self._load_patients(session),
+            self._load_freshness(session),
         )
+        if any(results):
+            yield AuthState.handle_unauthorized
 
     @rx.event
     def refresh(self) -> Any:
@@ -261,9 +349,17 @@ class MetricsState(rx.State):
         return MetricsState.load_all
 
     @rx.event(background=True)
-    async def retry_patients(self) -> None:
-        _CACHE.invalidate(self._patient_cache_key())
-        await self._load_patients()
+    async def retry_patients(self) -> AsyncIterator[Any]:
+        async with self:
+            session = (await self.get_state(AuthState)).current_session()
+            if session is None:
+                return
+            self._last_sid = session.sid
+            self._auth_failed = False
+        _CACHE.invalidate(self._patient_cache_key(session.sid))
+        auth_failed = await self._load_patients(session)
+        if auth_failed:
+            yield AuthState.handle_unauthorized
 
     @rx.event
     def next_patient_page(self) -> None:

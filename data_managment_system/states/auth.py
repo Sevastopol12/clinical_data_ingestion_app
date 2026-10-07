@@ -86,6 +86,7 @@ class AuthState(rx.State):
     @rx.event
     async def logout(self) -> AsyncIterator[Any]:
         token = self._access_token
+        old_sid = self._sid
         if token:
             try:
                 await auth_service.logout(token)
@@ -99,6 +100,15 @@ class AuthState(rx.State):
         self._access_token = ""
         self._sid = ""
         self._facility_id = ""
+        if old_sid:
+            from data_managment_system.states.metrics import _CACHE
+
+            _CACHE.invalidate_namespace(old_sid)
+        from data_managment_system.states.metrics import MetricsState
+        from data_managment_system.states.upload import FileInputState
+
+        yield MetricsState.clear_session
+        yield FileInputState.clear_session
         yield rx.redirect("/login")
 
     @rx.event
@@ -114,7 +124,8 @@ class AuthState(rx.State):
         return None
 
     @rx.event
-    def handle_unauthorized(self) -> Any:
+    async def handle_unauthorized(self) -> AsyncIterator[Any]:
+        old_sid = self._sid
         self.is_authenticated = False
         self.is_logging_in = False
         self.retry_after = 0
@@ -122,7 +133,16 @@ class AuthState(rx.State):
         self._sid = ""
         self._facility_id = ""
         self.login_error = "expired"
-        return rx.redirect("/login")
+        if old_sid:
+            from data_managment_system.states.metrics import _CACHE
+
+            _CACHE.invalidate_namespace(old_sid)
+        from data_managment_system.states.metrics import MetricsState
+        from data_managment_system.states.upload import FileInputState
+
+        yield MetricsState.clear_session
+        yield FileInputState.clear_session
+        yield rx.redirect("/login")
 
     def current_session(self) -> SessionInfo | None:
         if not self.is_authenticated:

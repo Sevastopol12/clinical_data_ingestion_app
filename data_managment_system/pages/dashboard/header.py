@@ -2,7 +2,8 @@
 
 import reflex as rx
 
-from data_managment_system.copy import COMMON, DASHBOARD
+from data_managment_system.copy import AUTH, COMMON, DASHBOARD
+from data_managment_system.states.auth import AuthState
 from data_managment_system.states.metrics import MetricsState
 from data_managment_system.theme import DESKTOP_HEADER_GAP, responsive
 
@@ -35,6 +36,19 @@ def _freshness_chip() -> rx.Component:
     )
 
 
+def _logout_button() -> rx.Component:
+    return rx.tooltip(
+        rx.icon_button(
+            rx.icon("log-out"),
+            aria_label=AUTH["logout_label"],
+            variant="ghost",
+            on_click=AuthState.logout,
+            _hover={"cursor": "pointer"},
+        ),
+        content=AUTH["logout_tooltip"],
+    )
+
+
 def header() -> rx.Component:
     return rx.hstack(
         rx.heading(
@@ -43,7 +57,12 @@ def header() -> rx.Component:
             weight="bold",
             letter_spacing="-0.02em",
         ),
-        _freshness_chip(),
+        rx.hstack(
+            _freshness_chip(),
+            _logout_button(),
+            gap="0.5em",
+            align="center",
+        ),
         justify="between",
         align="center",
         width="100%",

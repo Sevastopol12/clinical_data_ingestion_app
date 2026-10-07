@@ -6,10 +6,9 @@ from uuid import UUID
 
 import reflex as rx
 
-from data_managment_system.copy import UPLOAD
+from data_managment_system.copy import AUTH, UPLOAD
 from data_managment_system.models import MappingRequest
 from data_managment_system.models.ingestion import MAX_BATCH_FILES, MAX_FILE_BYTES
-from data_managment_system.services.http import default_context
 from data_managment_system.services.ingestion import (
     UploadJob,
     fetch_mapping_suggestions,
@@ -212,7 +211,14 @@ class FileInputState(rx.State):
             )
             for file in new_files
         ]
-        suggestions = await fetch_mapping_suggestions(requests)
+        async with self:
+            from data_managment_system.states.auth import AuthState
+
+            session = (await self.get_state(AuthState)).current_session()
+        if session is None:
+            yield rx.toast.warning(AUTH["err_expired"])
+            return
+        suggestions = await fetch_mapping_suggestions(requests, session.token)
         async with self:
             updated = list(self.files)
             for request, suggestion in zip(requests, suggestions):
@@ -301,6 +307,16 @@ class FileInputState(rx.State):
         self._revisions.clear()
         self.expanded_files = []
 
+    @rx.event
+    def clear_session(self) -> None:
+        self._files.clear()
+        self._ingestion_ids.clear()
+        self._revisions.clear()
+        self.files = []
+        self.expanded_files = []
+        self.dialog_open = False
+        self.is_submitting = False
+
     def _drop_file(self, filename: str) -> None:
         self._files.pop(filename, None)
         self._ingestion_ids.pop(filename, None)
@@ -323,11 +339,16 @@ class FileInputState(rx.State):
         empty = False
         validation_error = False
         async with self:
+            from data_managment_system.states.auth import AuthState
+
+            session = (await self.get_state(AuthState)).current_session()
             if self.is_submitting:
                 return
-            if not self.files:
-                empty = True
+            if session is None:
                 jobs: list[UploadJob] = []
+            elif not self.files:
+                empty = True
+                jobs = []
             else:
                 self.is_submitting = True
                 validated: list[FileVM] = []
@@ -357,6 +378,9 @@ class FileInputState(rx.State):
                     for file in self.files
                 ]
 
+        if session is None:
+            yield rx.toast.warning(AUTH["err_expired"])
+            return
         if empty:
             yield rx.toast.warning(
                 UPLOAD["toast_rejected"].format(details="no files selected")
@@ -368,7 +392,7 @@ class FileInputState(rx.State):
             yield rx.toast.error(UPLOAD["toast_fix_mapping"])
             return
 
-        outcomes = await submit_batch(jobs, default_context(), self._stage_callback)
+        outcomes = await submit_batch(jobs, session.token, self._stage_callback)
         successes = [outcome for outcome in outcomes if outcome.ok]
         failures = [outcome for outcome in outcomes if not outcome.ok]
         async with self:
@@ -397,6 +421,11 @@ class FileInputState(rx.State):
             yield rx.toast.error(UPLOAD["toast_partial_failure"])
         else:
             yield rx.toast.success(UPLOAD["toast_success"])
+        if failures and all(outcome.status_code == 401 for outcome in failures):
+            from data_managment_system.states.auth import AuthState
+
+            yield AuthState.handle_unauthorized
+            return
         if successes:
             from data_managment_system.states.metrics import MetricsState
 
