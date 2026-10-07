@@ -428,7 +428,7 @@ class FileInputState(rx.State):
             yield rx.toast.error(UPLOAD["toast_partial_failure"])
         else:
             yield rx.toast.success(UPLOAD["toast_success"])
-        if failures and all(outcome.status_code == 401 for outcome in failures):
+        if failures and any(outcome.status_code == 401 for outcome in failures):
             from data_managment_system.states.auth import AuthState
 
             yield AuthState.handle_unauthorized
