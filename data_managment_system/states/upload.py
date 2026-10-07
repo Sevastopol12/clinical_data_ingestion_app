@@ -9,6 +9,7 @@ import reflex as rx
 from data_managment_system.copy import AUTH, UPLOAD
 from data_managment_system.models import MappingRequest
 from data_managment_system.models.ingestion import MAX_BATCH_FILES, MAX_FILE_BYTES
+from data_managment_system.services.http import Unauthorized
 from data_managment_system.services.ingestion import (
     UploadJob,
     fetch_mapping_suggestions,
@@ -218,7 +219,13 @@ class FileInputState(rx.State):
         if session is None:
             yield rx.toast.warning(AUTH["err_expired"])
             return
-        suggestions = await fetch_mapping_suggestions(requests, session.token)
+        try:
+            suggestions = await fetch_mapping_suggestions(requests, session.token)
+        except Unauthorized:
+            from data_managment_system.states.auth import AuthState
+
+            yield AuthState.handle_unauthorized
+            return
         async with self:
             updated = list(self.files)
             for request, suggestion in zip(requests, suggestions):

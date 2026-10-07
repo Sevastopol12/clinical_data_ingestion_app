@@ -72,7 +72,7 @@ def period_selector(card_id: str) -> rx.Component:
                 "outline": "2px solid var(--accent-8)",
                 "outline_offset": "1px",
             },
-            aria_label=DASHBOARD["period_aria"].format(label=PERIOD_LABELS[grain]),
+            aria_label=DASHBOARD["period_aria"].format(label=grain),
             custom_attrs={"aria-pressed": selected},
             on_click=MetricsState.set_grain(card_id, grain),
         )
@@ -81,7 +81,7 @@ def period_selector(card_id: str) -> rx.Component:
     return rx.hstack(
         *chips,
         gap="0.3em",
-        flex_wrap="wrap",
+        flex_wrap="nowrap",
         flex_shrink="0",
         margin_left="auto",
         custom_attrs={"role": "group", "aria-label": DASHBOARD["period_group"]},

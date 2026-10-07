@@ -19,6 +19,7 @@ from data_managment_system.models import (
     MappingRequest,
     MappingResponse,
 )
+from data_managment_system.services.http import Unauthorized
 
 logger = logging.getLogger(__name__)
 StageCallback = Callable[[str, str], Awaitable[None]]
@@ -192,8 +193,10 @@ async def _fetch_mapping_one(
             response.raise_for_status()
             result = MappingResponse.model_validate(response.json())
             return result if result.filename == request.filename else None
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _log_failure(FailureStage.RECORD, exc, 0)
+            if _status_code(exc) == 401:
+                raise Unauthorized("mapping request unauthorized") from exc
             return None
 
 
@@ -212,6 +215,9 @@ async def fetch_mapping_suggestions(
             ),
             return_exceptions=True,
         )
+    for result in results:
+        if isinstance(result, Unauthorized):
+            raise result
     return [
         result if isinstance(result, MappingResponse) else None for result in results
     ]

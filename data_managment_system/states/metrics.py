@@ -3,13 +3,13 @@
 import asyncio
 import logging
 from collections.abc import AsyncIterator, Callable
-from typing import Any, cast
+from typing import Any, cast, get_args
 
 import reflex as rx
 
 from data_managment_system.copy import COMMON
 from data_managment_system.models.auth import SessionInfo
-from data_managment_system.models.metrics import GRAINS, Grain, PatientStateMetric
+from data_managment_system.models.metrics import Grain, PatientStateMetric
 from data_managment_system.services import metrics as metrics_service
 from data_managment_system.services.http import (
     BackendError,
@@ -64,7 +64,7 @@ _CARD_ENDPOINTS = {
 }
 
 DEFAULT_GRAIN: Grain = "TODAY"
-VALID_GRAINS = GRAINS
+VALID_GRAINS: tuple[Grain, ...] = get_args(Grain)
 CARD_IDS = (
     "visits",
     "patient_mix",
