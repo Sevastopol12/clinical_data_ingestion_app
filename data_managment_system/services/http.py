@@ -2,7 +2,6 @@ import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
-from uuid import UUID
 
 import httpx
 
@@ -14,7 +13,6 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 @dataclass(frozen=True)
 class AuthContext:
     access_token: str | None
-    facility_id: UUID
 
 
 ContextProvider = Callable[[], AuthContext]
@@ -87,7 +85,7 @@ class BackendClient:
 
 
 def default_context() -> AuthContext:
-    return AuthContext(None, settings.dev_facility_id)
+    return AuthContext(None)
 
 
 _client: BackendClient | None = None

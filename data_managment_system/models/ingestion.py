@@ -21,12 +21,12 @@ class FileStatus(str, Enum):
     PROCESSING = "PROCESSING"
     SUCCEED = "SUCCEED"
     ERROR = "ERROR"
+    REJECTED = "REJECTED"
 
 
 class IngestionCreate(BaseModel):
     filename: str
     content: bytes | None = Field(default=None, exclude=True)
-    facility_id: UUID
 
     @field_validator("filename")
     @classmethod
@@ -47,7 +47,6 @@ class IngestionCreate(BaseModel):
 
 class IngestionComplete(BaseModel):
     id: UUID
-    facility_id: UUID
     content_hash: str
     size_bytes: int | None = None
     mappings: dict[str, Any] | None = None

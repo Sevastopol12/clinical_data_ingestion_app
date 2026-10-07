@@ -89,7 +89,6 @@ async def _submit_one(
                 create = IngestionCreate(
                     filename=job.filename,
                     content=job.content,
-                    facility_id=context.facility_id,
                 )
                 response = await client.post(
                     settings.request_upload,
@@ -118,7 +117,6 @@ async def _submit_one(
             await on_stage(job.filename, "recording")
             complete = IngestionComplete(
                 id=ingestion_id,
-                facility_id=context.facility_id,
                 content_hash=hash_content(job.content),
                 size_bytes=len(job.content),
                 mappings=job.mappings,

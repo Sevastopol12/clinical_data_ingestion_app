@@ -26,7 +26,7 @@ class IssueCodeCount(BaseModel):
 class PeriodSummaryMetric(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    facility_id: UUID | None
+    facility_id: UUID
     period_grain: Grain
     period_start: ApiDateTime
     period_end: ApiDateTime
@@ -55,7 +55,7 @@ class PeriodSummaryMetric(BaseModel):
 class ComorbidityMetric(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    facility_id: UUID | None
+    facility_id: UUID
     period_grain: Grain
     period_start: ApiDateTime
     diagnosis_label: str
@@ -89,7 +89,7 @@ class PatientStateMetric(BaseModel):
 class DataQualityMetric(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    facility_id: UUID | None
+    facility_id: UUID
     period_grain: Grain
     period_start: ApiDateTime
     period_end: ApiDateTime

@@ -14,10 +14,8 @@ from data_managment_system.services.http import (
     BackendError,
     BadPayload,
     Unavailable,
-    default_context,
     get_client,
 )
-from data_managment_system.services.metrics import MetricsScope
 from data_managment_system.utils.builders import (
     build_clinical_control,
     build_comorbidity,
@@ -98,10 +96,6 @@ class MetricsState(rx.State):
     patients_status: str = "loading"
     data_quality_expanded: bool = False
 
-    @staticmethod
-    def _scope() -> MetricsScope:
-        return MetricsScope.facility(default_context().facility_id)
-
     @rx.event
     def toggle_data_quality(self) -> None:
         """Toggle the Data Quality issue list. UI-only; never triggers a fetch."""
@@ -134,14 +128,12 @@ class MetricsState(rx.State):
         )
 
     @staticmethod
-    def _cache_key(
-        scope: MetricsScope, endpoint: str, grain: str
-    ) -> tuple[str, str, str]:
-        return (scope.token, endpoint, grain)
+    def _cache_key(endpoint: str, grain: str) -> tuple[str, str]:
+        return (endpoint, grain)
 
     @staticmethod
-    def _patient_cache_key(scope: MetricsScope) -> tuple[str, str]:
-        return (scope.token, "out-of-control")
+    def _patient_cache_key() -> tuple[str]:
+        return ("out-of-control",)
 
     @staticmethod
     def _status_cache_key() -> tuple[str]:
@@ -154,26 +146,25 @@ class MetricsState(rx.State):
     async def _load_card(self, card_id: str, grain: Grain) -> None:
         await self._set_card_status(card_id, "loading")
         client = get_client()
-        scope = self._scope()
         try:
             endpoint = _CARD_ENDPOINTS[card_id]
-            key = self._cache_key(scope, endpoint, grain)
+            key = self._cache_key(endpoint, grain)
             if endpoint == "period-summary":
                 rows = await _CACHE.get_or_fetch(
                     key,
-                    lambda: metrics_service.fetch_period_summary(client, scope, grain),
+                    lambda: metrics_service.fetch_period_summary(client, grain),
                 )
                 builder = _PERIOD_BUILDERS[card_id]
             elif endpoint == "comorbidity":
                 rows = await _CACHE.get_or_fetch(
                     key,
-                    lambda: metrics_service.fetch_comorbidity(client, scope, grain),
+                    lambda: metrics_service.fetch_comorbidity(client, grain),
                 )
                 builder = build_comorbidity
             else:
                 rows = await _CACHE.get_or_fetch(
                     key,
-                    lambda: metrics_service.fetch_data_quality(client, scope, grain),
+                    lambda: metrics_service.fetch_data_quality(client, grain),
                 )
                 builder = build_data_quality
             view_model = builder(rows)
@@ -207,8 +198,7 @@ class MetricsState(rx.State):
         if card_id not in CARD_IDS:
             raise ValueError("Unknown dashboard card id")
         grain = self.grain_by_card[card_id]
-        scope = self._scope()
-        _CACHE.invalidate(self._cache_key(scope, _CARD_ENDPOINTS[card_id], grain))
+        _CACHE.invalidate(self._cache_key(_CARD_ENDPOINTS[card_id], grain))
         await self._load_card(card_id, cast(Grain, grain))
 
     retry_card = retry
@@ -216,12 +206,11 @@ class MetricsState(rx.State):
     async def _load_patients(self) -> None:
         async with self:
             self.patients_status = "loading"
-        scope = self._scope()
         try:
-            key = self._patient_cache_key(scope)
+            key = self._patient_cache_key()
             patients = await _CACHE.get_or_fetch(
                 key,
-                lambda: metrics_service.fetch_out_of_control(get_client(), scope),
+                lambda: metrics_service.fetch_out_of_control(get_client()),
             )
             rows, total = prepare_patients(patients)
         except Unavailable as exc:
@@ -273,7 +262,7 @@ class MetricsState(rx.State):
 
     @rx.event(background=True)
     async def retry_patients(self) -> None:
-        _CACHE.invalidate(self._patient_cache_key(self._scope()))
+        _CACHE.invalidate(self._patient_cache_key())
         await self._load_patients()
 
     @rx.event
