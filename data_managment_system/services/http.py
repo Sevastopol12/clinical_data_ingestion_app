@@ -1,6 +1,5 @@
 import logging
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping
 from typing import Any
 
 import httpx
@@ -8,14 +7,6 @@ import httpx
 from data_managment_system.config import settings
 
 logging.getLogger("httpx").setLevel(logging.WARNING)
-
-
-@dataclass(frozen=True)
-class AuthContext:
-    access_token: str | None
-
-
-ContextProvider = Callable[[], AuthContext]
 
 
 class BackendError(Exception):
@@ -42,23 +33,20 @@ class BackendClient:
     def __init__(
         self,
         base_url: str,
-        context: ContextProvider,
         http: httpx.AsyncClient | None = None,
     ) -> None:
         self._base_url = httpx.URL(base_url)
-        self._context = context
         self._http = http or httpx.AsyncClient(base_url=base_url)
 
     async def get_json(
         self,
         path: str,
         params: Mapping[str, str] | None = None,
+        *,
+        access_token: str,
     ) -> Any:
-        context = self._context()
         request_params = dict(params or {})
-        headers: dict[str, str] = {}
-        if context.access_token is not None:
-            headers["Authorization"] = f"Bearer {context.access_token}"
+        headers = {"Authorization": f"Bearer {access_token}"}
 
         try:
             response = await self._http.get(
@@ -84,15 +72,11 @@ class BackendClient:
             raise BadPayload("backend returned invalid JSON") from exc
 
 
-def default_context() -> AuthContext:
-    return AuthContext(None)
-
-
 _client: BackendClient | None = None
 
 
 def get_client() -> BackendClient:
     global _client
     if _client is None:
-        _client = BackendClient(settings.backend_base_url, default_context)
+        _client = BackendClient(settings.backend_base_url)
     return _client

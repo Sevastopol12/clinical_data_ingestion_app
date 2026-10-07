@@ -25,47 +25,57 @@ def _parse_list(payload: Any, model: type[Any]) -> list[Any]:
 
 
 async def fetch_period_summary(
-    client: BackendClient, grain: Grain
+    client: BackendClient, grain: Grain, *, access_token: str
 ) -> list[PeriodSummaryMetric]:
     params = {"grain": grain}
     rows = _parse_list(
-        await client.get_json(f"{PREFIX}/period-summary", params),
+        await client.get_json(
+            f"{PREFIX}/period-summary", params, access_token=access_token
+        ),
         PeriodSummaryMetric,
     )
     return sorted(rows, key=lambda row: row.period_start)
 
 
 async def fetch_comorbidity(
-    client: BackendClient, grain: Grain
+    client: BackendClient, grain: Grain, *, access_token: str
 ) -> list[ComorbidityMetric]:
     params = {"grain": grain}
     rows = _parse_list(
-        await client.get_json(f"{PREFIX}/comorbidity", params),
+        await client.get_json(
+            f"{PREFIX}/comorbidity", params, access_token=access_token
+        ),
         ComorbidityMetric,
     )
     return sorted(rows, key=lambda row: row.period_start)
 
 
 async def fetch_data_quality(
-    client: BackendClient, grain: Grain
+    client: BackendClient, grain: Grain, *, access_token: str
 ) -> list[DataQualityMetric]:
     params = {"grain": grain}
     rows = _parse_list(
-        await client.get_json(f"{PREFIX}/data-quality", params),
+        await client.get_json(
+            f"{PREFIX}/data-quality", params, access_token=access_token
+        ),
         DataQualityMetric,
     )
     return sorted(rows, key=lambda row: row.period_start)
 
 
-async def fetch_out_of_control(client: BackendClient) -> list[PatientStateMetric]:
+async def fetch_out_of_control(
+    client: BackendClient, *, access_token: str
+) -> list[PatientStateMetric]:
     return _parse_list(
-        await client.get_json(f"{PREFIX}/patient-state/out-of-control"),
+        await client.get_json(
+            f"{PREFIX}/patient-state/out-of-control", access_token=access_token
+        ),
         PatientStateMetric,
     )
 
 
-async def fetch_status(client: BackendClient) -> MetricsStatus:
-    payload = await client.get_json(f"{PREFIX}/status")
+async def fetch_status(client: BackendClient, *, access_token: str) -> MetricsStatus:
+    payload = await client.get_json(f"{PREFIX}/status", access_token=access_token)
     try:
         return MetricsStatus.model_validate(payload)
     except (ValidationError, TypeError, ValueError) as exc:
