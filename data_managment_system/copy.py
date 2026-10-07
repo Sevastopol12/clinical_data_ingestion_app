@@ -162,3 +162,19 @@ UPLOAD = {
     "toast_success": "Uploaded. Metrics update after processing.",
     "toast_busy": "An upload is in progress.",
 }
+
+AUTH = {
+    "title": "Sign in",
+    "username_label": "Username",
+    "password_label": "Password",
+    "sign_in": "Sign in",
+    "signing_in": "Signing in…",
+    "err_invalid": "Invalid username or password.",
+    "err_rate_limited": "Too many attempts. Try again in {seconds} s.",
+    "err_unavailable": "Login is temporarily unavailable. Please try again.",
+    "err_expired": "Your session expired. Please sign in again.",
+    "logout_label": "Log out",
+    "logout_tooltip": "Log out",
+    "logout_warning": "Signed out here, but the server could not confirm it.",
+    "loading": "Loading…",
+}
