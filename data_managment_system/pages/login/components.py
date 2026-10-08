@@ -11,9 +11,9 @@ from data_managment_system.theme import TEXT_MUTED, responsive
 
 _RATE_PREFIX, _RATE_SUFFIX = AUTH["err_rate_limited"].split("{seconds}")
 
-HERO_GAP = "1.75em"
-HERO_CARD_GAP = "3em"
-CONTENT_GAP = "3em"
+HERO_GAP = "1em"
+HERO_CARD_GAP = "1.25em"
+CONTENT_GAP = "2em"
 CARD_PADDING_MOBILE = "1.5em"
 CARD_PADDING_DESKTOP = "2em"
 CARD_TITLE_GAP = "2em"
@@ -21,8 +21,8 @@ LABEL_GAP = "0.5em"
 FIELD_GAP = "1.75em"
 FORM_BUTTON_GAP = "2.25em"
 CALLOUT_GAP = "1.25em"
-CARD_FOOTER_GAP = "2em"
-BRAND_PADDING_Y = "1.5em"
+CARD_FOOTER_GAP = "1.25em"
+BRAND_PADDING_Y = "0.5em"
 BRAND_PADDING_X_MOBILE = "1.25em"
 BRAND_PADDING_X_DESKTOP = "3em"
 SCRIM_WIDTH = "46em"
