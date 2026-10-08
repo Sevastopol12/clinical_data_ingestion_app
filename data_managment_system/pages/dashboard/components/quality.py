@@ -30,6 +30,12 @@ def _dq_tile(field: rx.Var) -> rx.Component:
         ),
         align="start",
         gap="0.2em",
+        background="var(--gray-a2)",
+        border="1px solid var(--gray-a4)",
+        border_radius="0.6em",
+        padding="0.75em",
+        width="100%",
+        box_sizing="border-box",
     )
 
 
@@ -86,6 +92,9 @@ def _issue_row(item: rx.Var) -> rx.Component:
         ),
         align="stretch",
         gap="0.35em",
+        border_bottom="1px solid var(--gray-a4)",
+        padding_bottom="0.6em",
+        width="100%",
     )
 
 
@@ -210,4 +219,5 @@ def data_quality_card(
         card_id,
         _card_state(card_id, ready, rx.text(COMMON["no_data"]), on_retry),
         footer_start=footer_toggle,
+        icon="shield-check",
     )

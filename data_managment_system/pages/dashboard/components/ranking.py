@@ -32,12 +32,14 @@ def ranking_card(
                 rx.box(
                     width=item_any.width_pct.to_string() + "%",
                     height="100%",
-                    background="var(--accent-9)",
+                    background=(
+                        "linear-gradient(90deg, var(--accent-9), var(--accent-a8))"
+                    ),
                     border_radius="999em",
                 ),
                 width="100%",
                 height="0.3em",
-                background="var(--gray-a4)",
+                background="var(--gray-a3)",
                 border_radius="999em",
             ),
             width="100%",
@@ -53,4 +55,5 @@ def ranking_card(
         card_id,
         _card_state(card_id, ready, rx.text(COMMON["no_data"]), on_retry),
         period_note=period_note,
+        icon="layers",
     )

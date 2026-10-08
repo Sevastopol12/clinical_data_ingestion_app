@@ -36,23 +36,48 @@ def state_block(
             (
                 "loading",
                 rx.vstack(
-                    rx.skeleton(width="100%", height="1em"),
-                    rx.skeleton(width="100%", height="1em"),
-                    rx.skeleton(width="100%", height="1em"),
+                    rx.skeleton(width="100%", height="1em", class_name="dash-shimmer"),
+                    rx.skeleton(width="100%", height="1em", class_name="dash-shimmer"),
+                    rx.skeleton(width="100%", height="1em", class_name="dash-shimmer"),
                     align="stretch",
                     gap="0.75em",
+                    width="100%",
                 ),
             ),
             (
                 "503",
-                rx.hstack(
-                    rx.icon("triangle-alert"), rx.text(message), retry, gap="0.75em"
+                rx.box(
+                    rx.hstack(
+                        rx.icon("triangle-alert"),
+                        rx.text(message),
+                        retry,
+                        gap="0.75em",
+                        align="center",
+                    ),
+                    background="var(--gray-a2)",
+                    border="1px solid var(--gray-a4)",
+                    border_radius="0.5em",
+                    padding="0.75em",
+                    width="100%",
+                    box_sizing="border-box",
                 ),
             ),
             (
                 "error",
-                rx.hstack(
-                    rx.icon("circle-alert"), rx.text(message), retry, gap="0.75em"
+                rx.box(
+                    rx.hstack(
+                        rx.icon("circle-alert"),
+                        rx.text(message),
+                        retry,
+                        gap="0.75em",
+                        align="center",
+                    ),
+                    background="var(--gray-a2)",
+                    border="1px solid var(--gray-a4)",
+                    border_radius="0.5em",
+                    padding="0.75em",
+                    width="100%",
+                    box_sizing="border-box",
                 ),
             ),
             rx.hstack(rx.icon("info"), rx.text(message), gap="0.75em"),
