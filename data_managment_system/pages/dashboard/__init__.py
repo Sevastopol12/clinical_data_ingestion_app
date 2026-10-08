@@ -3,12 +3,13 @@
 import reflex as rx
 
 from data_managment_system.copy import DASHBOARD
+from data_managment_system.pages.dashboard.backdrop import dashboard_backdrop
 from data_managment_system.pages.dashboard.components import (
     data_quality_card,
     kpi_card,
     ranking_card,
 )
-from data_managment_system.pages.dashboard.header import header
+from data_managment_system.pages.dashboard.header import hero, topbar
 from data_managment_system.pages.dashboard.table import patient_table
 from data_managment_system.pages.gate import gated
 from data_managment_system.pages.upload import upload_dialog, upload_fab
@@ -31,8 +32,10 @@ from data_managment_system.theme import (
 def index() -> rx.Component:
     return gated(
         rx.box(
+            dashboard_backdrop(),
+            topbar(),
             rx.box(
-                header(),
+                hero(),
                 rx.grid(
                     rx.grid(
                         rx.flex(
@@ -121,6 +124,8 @@ def index() -> rx.Component:
                 ),
                 padding_bottom="5em",
                 box_sizing="border-box",
+                position="relative",
+                z_index="2",
             ),
             upload_fab(),
             upload_dialog(),

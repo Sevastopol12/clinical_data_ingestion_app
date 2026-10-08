@@ -64,22 +64,22 @@ def responsive(initial: str, **by_breakpoint: str) -> Any:
     )
 
 
-# Top of page to title -> 3em
-DESKTOP_PAGE_PADDING_TOP = "1.5em"
-# Left and right page margin -> 5em
+# Top of page to title → 3em
+DESKTOP_PAGE_PADDING_TOP = "3em"
+# Left and right page margin → 5em
 DESKTOP_PAGE_PADDING_X = "5em"
-# Title to row 1 -> 2em
-DESKTOP_HEADER_GAP = "1em"
-# Gap between cards of a row -> 3em
-DESKTOP_COLUMN_GAP = "2em"
-# Patient Mix to Glucose / HbA1c -> 2em
-DESKTOP_STACK_GAP = "1em"
-# Visual gap between sections -> 4em
-DESKTOP_SECTION_GAP = "3em"
+# Title to content → 2em
+DESKTOP_HEADER_GAP = "2em"
+# Gap between left/right columns → 3em
+DESKTOP_COLUMN_GAP = "3em"
+# Gap between stacked cards in the left column → 2em
+DESKTOP_STACK_GAP = "2em"
+# Visual gap between sections (stacks↔DQ) → 4em
+DESKTOP_SECTION_GAP = "4em"
 CARD_PADDING_COMPACT = "0.9em"
 CARD_BODY_GAP = "0.6em"
 DQ_ISSUE_COLUMN_GAP = "2.5em"
-KPI_MIN_HEIGHT = "8em"
+KPI_MIN_HEIGHT = "9em"
 RANKING_MAX_HEIGHT = "9.5em"
 TABLE_CELL_PADDING_Y = "0.35em"
 PATIENT_ROW_MAX_HEIGHT = "6em"
@@ -123,6 +123,271 @@ PAGE_GLOW = (
     "radial-gradient(60vw 45vh at 50% 100%, rgba(167, 139, 250, 0.16), transparent 65%), "
     f"{PAGE_BACKGROUND}"
 )
+
+LOGIN_GRID_LINE = "rgba(139, 92, 246, 0.06)"
+LOGIN_GRID_SIZE = "3.5em"
+LOGIN_GRID_MASK = (
+    "radial-gradient(ellipse 80% 70% at 50% 40%, black 0%, transparent 75%)"
+)
+LOGIN_GRID_MINOR = "rgba(139, 92, 246, 0.05)"
+LOGIN_GRID_MAJOR = "rgba(139, 92, 246, 0.10)"
+LOGIN_GRID_MINOR_SIZE = "1em"
+LOGIN_GRID_MAJOR_SIZE = "5em"
+LOGIN_GRID_BG = (
+    f"linear-gradient(to right, {LOGIN_GRID_MINOR} 1px, transparent 1px), "
+    f"linear-gradient(to bottom, {LOGIN_GRID_MINOR} 1px, transparent 1px), "
+    f"linear-gradient(to right, {LOGIN_GRID_MAJOR} 1px, transparent 1px), "
+    f"linear-gradient(to bottom, {LOGIN_GRID_MAJOR} 1px, transparent 1px)"
+)
+LOGIN_GRID_BG_SIZE = (
+    f"{LOGIN_GRID_MINOR_SIZE} {LOGIN_GRID_MINOR_SIZE}, "
+    f"{LOGIN_GRID_MINOR_SIZE} {LOGIN_GRID_MINOR_SIZE}, "
+    f"{LOGIN_GRID_MAJOR_SIZE} {LOGIN_GRID_MAJOR_SIZE}, "
+    f"{LOGIN_GRID_MAJOR_SIZE} {LOGIN_GRID_MAJOR_SIZE}"
+)
+LOGIN_GLOW = (
+    "radial-gradient(42em 30em at 50% 38%, rgba(139, 92, 246, 0.14), "
+    "transparent 70%), "
+    "radial-gradient(30em 22em at 50% 45%, rgba(109, 40, 217, 0.12), "
+    "transparent 70%), "
+    "radial-gradient(54em 36em at 50% 42%, rgba(167, 139, 250, 0.11), "
+    "transparent 75%)"
+)
+LOGIN_STAGE_WIDTH = "40em"
+LOGIN_STAGE_FADE = "6em"
+LOGIN_STAGE_MASK = (
+    "linear-gradient(90deg, #000 0, #000 calc(50% - "
+    f"{LOGIN_STAGE_WIDTH} / 2 - {LOGIN_STAGE_FADE}), "
+    f"transparent calc(50% - {LOGIN_STAGE_WIDTH} / 2), "
+    f"transparent calc(50% + {LOGIN_STAGE_WIDTH} / 2), "
+    f"#000 calc(50% + {LOGIN_STAGE_WIDTH} / 2 + {LOGIN_STAGE_FADE}), "
+    "#000 100%)"
+)
+LOGIN_BLOB_OPACITY = "0.3"
+LOGIN_SWEEP_BAND_HEIGHT = "1.5em"
+LOGIN_RING_LINE = "rgba(139, 92, 246, 0.08)"
+LOGIN_RADAR_BG = (
+    f"radial-gradient(circle at center, transparent 7.5em, {LOGIN_RING_LINE} "
+    "7.5em, "
+    f"{LOGIN_RING_LINE} calc(7.5em + 1px), transparent calc(7.5em + 2px)), "
+    "radial-gradient(circle at center, transparent 14.5em, "
+    f"{LOGIN_RING_LINE} 14.5em, "
+    f"{LOGIN_RING_LINE} calc(14.5em + 1px), transparent calc(14.5em + 2px)), "
+    "radial-gradient(circle at center, transparent 22.5em, "
+    f"{LOGIN_RING_LINE} 22.5em, "
+    f"{LOGIN_RING_LINE} calc(22.5em + 1px), transparent calc(22.5em + 2px)), "
+    "radial-gradient(circle at center, transparent 31.5em, "
+    f"{LOGIN_RING_LINE} 31.5em, "
+    f"{LOGIN_RING_LINE} calc(31.5em + 1px), transparent calc(31.5em + 2px))"
+)
+LOGIN_HUD_LINE = "rgba(167, 139, 250, 0.30)"
+LOGIN_HUD_TICK = "rgba(167, 139, 250, 0.25)"
+LOGIN_RULER_TICK = "rgba(139, 92, 246, 0.12)"
+LOGIN_RULER_MASK = (
+    "linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)"
+)
+LOGIN_RULER_MINOR_BG = (
+    f"repeating-linear-gradient(to bottom, {LOGIN_RULER_TICK} 0px, "
+    f"{LOGIN_RULER_TICK} 1px, transparent 1px, transparent 1em)"
+)
+LOGIN_RULER_MAJOR_BG = (
+    f"repeating-linear-gradient(to bottom, {LOGIN_RULER_TICK} 0px, "
+    f"{LOGIN_RULER_TICK} 1px, transparent 1px, transparent 5em)"
+)
+LOGIN_TIMELINE_MASK = (
+    "linear-gradient(to right, transparent, black 8%, black 92%, transparent)"
+)
+LOGIN_TIMELINE_MINOR_BG = (
+    f"repeating-linear-gradient(to right, {LOGIN_RULER_TICK} 0px, "
+    f"{LOGIN_RULER_TICK} 1px, transparent 1px, transparent 1em)"
+)
+LOGIN_TIMELINE_MAJOR_BG = (
+    f"repeating-linear-gradient(to right, {LOGIN_RULER_TICK} 0px, "
+    f"{LOGIN_RULER_TICK} 1px, transparent 1px, transparent 5em)"
+)
+LOGIN_CROSSHAIR = "rgba(167, 139, 250, 0.25)"
+LOGIN_SWEEP_HEAD = "rgba(196, 181, 253, 0.55)"
+LOGIN_SWEEP_BAR = (
+    "linear-gradient(to right, transparent, rgba(167, 139, 250, 0.18), "
+    "rgba(196, 181, 253, 0.28), rgba(167, 139, 250, 0.18), transparent)"
+)
+LOGIN_SWEEP_GLOW = "0 0 0.4em rgba(196, 181, 253, 0.45)"
+LOGIN_SWEEP_MASK = (
+    "linear-gradient(90deg, transparent, black 20%, black 80%, transparent)"
+)
+_ECG_D = (
+    "M0,100 L140,100 L160,95 L180,100 L260,100 L275,100 "
+    "L285,55 L295,140 L305,80 L315,100 L440,100 L580,100 L595,100 "
+    "L605,50 L615,145 L625,78 L635,100 L760,100 L880,100 L895,100 "
+    "L905,58 L915,138 L925,82 L935,100 "
+    "L1060,100 L1080,95 L1100,100 L1200,100"
+)
+
+
+def _ecg_data_uri(stroke_stops: str) -> str:
+    return (
+        'url("data:image/svg+xml,'
+        "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' "
+        "preserveAspectRatio='none'%3E"
+        "%3Cdefs%3E%3ClinearGradient id='ecg' x1='0' y1='0' x2='1' y2='0'%3E"
+        f"{stroke_stops}"
+        "%3C/linearGradient%3E%3C/defs%3E"
+        f"%3Cpath d='{_ECG_D}' "
+        "fill='none' stroke='url(%23ecg)' stroke-width='2' "
+        "stroke-linejoin='round' stroke-linecap='round'/%3E"
+        '%3C/svg%3E")'
+    )
+
+
+LOGIN_ECG_DATA_URI = _ecg_data_uri(
+    "%3Cstop offset='0' stop-color='transparent' stop-opacity='0'/%3E"
+    "%3Cstop offset='0.15' stop-color='rgba(139, 92, 246, 0.5)'/%3E"
+    "%3Cstop offset='0.5' stop-color='rgba(167, 139, 250, 0.5)'/%3E"
+    "%3Cstop offset='0.85' stop-color='rgba(139, 92, 246, 0.5)'/%3E"
+    "%3Cstop offset='1' stop-color='transparent' stop-opacity='0'/%3E"
+)
+LOGIN_ECG_BRIGHT_DATA_URI = _ecg_data_uri(
+    "%3Cstop offset='0' stop-color='transparent' stop-opacity='0'/%3E"
+    "%3Cstop offset='0.15' stop-color='rgba(139, 92, 246, 0.6)'/%3E"
+    "%3Cstop offset='0.5' stop-color='rgba(167, 139, 250, 0.6)'/%3E"
+    "%3Cstop offset='0.85' stop-color='rgba(139, 92, 246, 0.6)'/%3E"
+    "%3Cstop offset='1' stop-color='transparent' stop-opacity='0'/%3E"
+)
+# Dashboard shell tokens (T17). Dim ECG-paper grid, top aurora, hero ECG trace.
+DASH_GRID_MINOR = "rgba(139, 92, 246, 0.04)"
+DASH_GRID_MAJOR = "rgba(139, 92, 246, 0.07)"
+DASH_GRID_MINOR_SIZE = "1em"
+DASH_GRID_MAJOR_SIZE = "5em"
+DASH_GRID_BG = (
+    f"linear-gradient(to right, {DASH_GRID_MINOR} 1px, transparent 1px), "
+    f"linear-gradient(to bottom, {DASH_GRID_MINOR} 1px, transparent 1px), "
+    f"linear-gradient(to right, {DASH_GRID_MAJOR} 1px, transparent 1px), "
+    f"linear-gradient(to bottom, {DASH_GRID_MAJOR} 1px, transparent 1px)"
+)
+DASH_GRID_BG_SIZE = (
+    f"{DASH_GRID_MINOR_SIZE} {DASH_GRID_MINOR_SIZE}, "
+    f"{DASH_GRID_MINOR_SIZE} {DASH_GRID_MINOR_SIZE}, "
+    f"{DASH_GRID_MAJOR_SIZE} {DASH_GRID_MAJOR_SIZE}, "
+    f"{DASH_GRID_MAJOR_SIZE} {DASH_GRID_MAJOR_SIZE}"
+)
+DASH_GRID_MASK = "radial-gradient(ellipse 90% 65% at 50% 0%, black 0%, transparent 78%)"
+DASH_GLOW = (
+    "radial-gradient(42em 24em at 50% 0%, rgba(139, 92, 246, 0.10), "
+    "transparent 70%), "
+    "radial-gradient(30em 18em at 16% 0%, rgba(109, 40, 217, 0.08), "
+    "transparent 70%)"
+)
+DASH_ECG_DATA_URI = _ecg_data_uri(
+    "%3Cstop offset='0' stop-color='transparent' stop-opacity='0'/%3E"
+    "%3Cstop offset='0.15' stop-color='rgba(139, 92, 246, 0.32)'/%3E"
+    "%3Cstop offset='0.5' stop-color='rgba(167, 139, 250, 0.32)'/%3E"
+    "%3Cstop offset='0.85' stop-color='rgba(139, 92, 246, 0.32)'/%3E"
+    "%3Cstop offset='1' stop-color='transparent' stop-opacity='0'/%3E"
+)
+DASH_ECG_MASK = "linear-gradient(to right, transparent 0%, transparent 60%, black 85%)"
+PANEL_STYLE = {
+    "background": "var(--gray-a2)",
+    "border": "1px solid var(--gray-a5)",
+    "border_radius": "1em",
+    "padding": "1.1em",
+    "box_sizing": "border-box",
+    "box_shadow": ("inset 0 1px 0 var(--gray-a3), 0 1.5em 3em var(--black-a6)"),
+    "backdrop_filter": "blur(0.75em)",
+    "position": "relative",
+    "overflow": "hidden",
+    "transition": "border-color 150ms ease",
+    "_hover": {"border_color": "var(--accent-a7)"},
+}
+PANEL_ICON_TILE = {
+    "width": "2em",
+    "height": "2em",
+    "min_width": "2em",
+    "border_radius": "0.6em",
+    "background": "var(--accent-a3)",
+    "border": "1px solid var(--accent-a6)",
+    "display": "flex",
+    "align_items": "center",
+    "justify_content": "center",
+    "flex_shrink": "0",
+}
+TOPBAR_STYLE = {
+    "background": "rgba(0, 0, 0, 0.55)",
+    "backdrop_filter": "blur(0.75em)",
+    "border_bottom": "1px solid var(--gray-a5)",
+    "box_sizing": "border-box",
+}
+LOGIN_PPG_DATA_URI = (
+    'url("data:image/svg+xml,'
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' "
+    "preserveAspectRatio='none'%3E"
+    "%3Cdefs%3E%3ClinearGradient id='ppg' x1='0' y1='0' x2='1' y2='0'%3E"
+    "%3Cstop offset='0' stop-color='transparent' stop-opacity='0'/%3E"
+    "%3Cstop offset='0.15' stop-color='rgba(139, 92, 246, 0.28)'/%3E"
+    "%3Cstop offset='0.5' stop-color='rgba(167, 139, 250, 0.28)'/%3E"
+    "%3Cstop offset='0.85' stop-color='rgba(139, 92, 246, 0.28)'/%3E"
+    "%3Cstop offset='1' stop-color='transparent' stop-opacity='0'/%3E"
+    "%3C/linearGradient%3E%3C/defs%3E"
+    "%3Cpolyline points='0,100 200,100 230,92 260,100 300,100 335,62 "
+    "365,112 395,100 600,100 640,92 670,100 710,100 745,62 775,112 "
+    "805,100 1000,100 1030,92 1060,100 1200,100' "
+    "fill='none' stroke='url(%23ppg)' stroke-width='2' "
+    "stroke-linejoin='round' stroke-linecap='round'/%3E"
+    '%3C/svg%3E")'
+)
+LOGIN_RESP_DATA_URI = (
+    'url("data:image/svg+xml,'
+    "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 200' "
+    "preserveAspectRatio='none'%3E"
+    "%3Cdefs%3E%3ClinearGradient id='resp' x1='0' y1='0' x2='1' y2='0'%3E"
+    "%3Cstop offset='0' stop-color='transparent' stop-opacity='0'/%3E"
+    "%3Cstop offset='0.15' stop-color='rgba(139, 92, 246, 0.28)'/%3E"
+    "%3Cstop offset='0.5' stop-color='rgba(167, 139, 250, 0.28)'/%3E"
+    "%3Cstop offset='0.85' stop-color='rgba(139, 92, 246, 0.28)'/%3E"
+    "%3Cstop offset='1' stop-color='transparent' stop-opacity='0'/%3E"
+    "%3C/linearGradient%3E%3C/defs%3E"
+    "%3Cpolyline points='0,100 100,100 200,62 300,138 400,100 500,100 "
+    "600,62 700,138 800,100 900,100 1000,62 1100,138 1200,100' "
+    "fill='none' stroke='url(%23resp)' stroke-width='1.5' "
+    "stroke-linejoin='round' stroke-linecap='round'/%3E"
+    '%3C/svg%3E")'
+)
+LOGIN_CSS = """
+@keyframes login-rise {
+    from { opacity: 0; transform: translateY(0.75em); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.login-rise { animation: login-rise 600ms ease both; }
+.login-rise-2 { animation: login-rise 600ms ease both; animation-delay: 120ms; }
+.login-rise-3 { animation: login-rise 600ms ease both; animation-delay: 240ms; }
+@keyframes ecg-glow {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.6; }
+}
+.login-ecg { animation: ecg-glow 6s ease-in-out infinite; }
+@keyframes login-ping {
+    from { opacity: 0.5; transform: translate(-50%, -50%) scale(0.6); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(1.15); }
+}
+.login-ping { animation: login-ping 6s ease-out infinite; }
+@keyframes login-sweep {
+    from { transform: translateX(-22vw); }
+    to { transform: translateX(100vw); }
+}
+.login-sweep { animation: login-sweep 8s linear infinite; }
+@keyframes login-sweep-inner {
+    from { transform: translateX(22vw); }
+    to { transform: translateX(-100vw); }
+}
+.login-sweep-inner { animation: login-sweep-inner 8s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .login-rise, .login-rise-2, .login-rise-3, .login-ecg, .login-ping,
+    .login-sweep, .login-sweep-inner, .glow-blob {
+        animation: none;
+        opacity: 1;
+    }
+    .login-sweep { display: none; }
+}
+"""
 
 
 def create_background() -> rx.Component:

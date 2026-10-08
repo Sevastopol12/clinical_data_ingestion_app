@@ -1,11 +1,18 @@
-"""Dashboard header and freshness indicator."""
+"""Dashboard top bar and hero."""
 
 import reflex as rx
 
 from data_managment_system.copy import AUTH, COMMON, DASHBOARD
 from data_managment_system.states.auth import AuthState
 from data_managment_system.states.metrics import MetricsState
-from data_managment_system.theme import DESKTOP_HEADER_GAP, responsive
+from data_managment_system.theme import (
+    DESKTOP_HEADER_GAP,
+    DESKTOP_PAGE_PADDING_X,
+    PANEL_ICON_TILE,
+    TEXT_MUTED,
+    TOPBAR_STYLE,
+    responsive,
+)
 
 DISPLAY_TZ = "Asia/Ho_Chi_Minh"
 
@@ -49,27 +56,93 @@ def _logout_button() -> rx.Component:
     )
 
 
-def header() -> rx.Component:
-    return rx.hstack(
-        rx.heading(
-            DASHBOARD["title"],
-            size="7",
-            weight="bold",
-            letter_spacing="-0.02em",
-        ),
+def topbar() -> rx.Component:
+    return rx.box(
         rx.hstack(
-            _freshness_chip(),
-            _logout_button(),
-            gap="0.5em",
+            rx.hstack(
+                rx.box(
+                    rx.icon("activity", size=16),
+                    style=PANEL_ICON_TILE,
+                ),
+                rx.text(AUTH["brand"], size="2", weight="medium"),
+                gap="0.6em",
+                align="center",
+            ),
+            rx.hstack(
+                _freshness_chip(),
+                _logout_button(),
+                gap="0.5em",
+                align="center",
+            ),
+            justify="between",
             align="center",
+            width="100%",
+            gap="0.75em",
+            flex_wrap="wrap",
         ),
-        justify="between",
-        align="center",
+        position="sticky",
+        top="0",
+        z_index="20",
         width="100%",
-        gap="0.75em",
-        flex_wrap="wrap",
+        style=TOPBAR_STYLE,
+        padding_x=responsive("1em", md="1.5em", lg=DESKTOP_PAGE_PADDING_X),
+        padding_y="0.6em",
+    )
+
+
+def hero() -> rx.Component:
+    return rx.box(
+        rx.flex(
+            rx.flex(
+                rx.box(
+                    background="var(--accent-9)",
+                    border_radius="1em",
+                    box_shadow="0 0 0.75em var(--accent-9)",
+                    width="0.4em",
+                    height="0.4em",
+                ),
+                rx.text(
+                    DASHBOARD["eyebrow"],
+                    size="1",
+                    color=TEXT_MUTED,
+                    letter_spacing="0.14em",
+                    style={"text_transform": "uppercase"},
+                ),
+                direction="row",
+                align="center",
+                gap="0.5em",
+                border="1px solid var(--gray-a5)",
+                border_radius="1em",
+                background="var(--gray-a2)",
+                padding_x="0.8em",
+                padding_y="0.4em",
+            ),
+            rx.heading(
+                DASHBOARD["title"],
+                as_="h1",
+                size=responsive("7", lg="8"),
+                letter_spacing="-0.03em",
+                line_height="1.05",
+                # Self-relative em padding so background-clip text never clips descenders.
+                padding_bottom="0.2em",
+                background="linear-gradient(180deg, var(--gray-12), var(--gray-9))",
+                background_clip="text",
+                color="transparent",
+                style={"-webkit-background-clip": "text", "font_weight": "600"},
+            ),
+            rx.text(DASHBOARD["hero_sub"], size="3", color=TEXT_MUTED),
+            direction="column",
+            align="start",
+            gap="1em",
+            width="100%",
+        ),
+        width="100%",
         margin_bottom=responsive("0.5em", lg=DESKTOP_HEADER_GAP),
     )
 
 
-__all__ = ["header"]
+def header() -> rx.Component:
+    return rx.fragment(topbar(), hero())
+
+
+__all__ = ["header", "hero", "topbar"]

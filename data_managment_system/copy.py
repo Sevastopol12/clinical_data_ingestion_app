@@ -92,6 +92,8 @@ DASHBOARD = {
     "patient_table_title": "Out-of-control patients",
     "dq_more": "More",
     "dq_less": "Less",
+    "eyebrow": "Facility overview",
+    "hero_sub": "Hypertension and diabetes control across your facility.",
 }
 
 ISSUE_CODE_LABELS = {
