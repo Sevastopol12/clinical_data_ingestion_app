@@ -1,4 +1,4 @@
-"""Responsive out-of-control patient table."""
+"""Responsive out-of-control patient table (console panel)."""
 
 from typing import Any
 
@@ -8,7 +8,8 @@ from data_managment_system.copy import COMMON, DASHBOARD
 from data_managment_system.pages.dashboard.components import state_block
 from data_managment_system.states.metrics import MetricsState
 from data_managment_system.theme import (
-    DASHBOARD_CARD_STYLE,
+    PANEL_ICON_TILE,
+    PANEL_STYLE,
     PATIENT_ROW_MAX_HEIGHT,
     TABLE_CELL_PADDING_Y,
     responsive,
@@ -16,6 +17,14 @@ from data_managment_system.theme import (
 
 COLUMN_WIDTHS = ("15%", "29%", "11%", "21%", "24%")
 PATIENT_PAGE_SIZE = 10
+
+MOBILE_CARD_STYLE = {
+    "background": "var(--gray-a2)",
+    "border": "1px solid var(--gray-a4)",
+    "border_radius": "0.75em",
+    "padding": "0.75em",
+    "box_sizing": "border-box",
+}
 
 
 def _badges(row: rx.Var) -> rx.Component:
@@ -111,7 +120,12 @@ def _desktop_row(row: rx.Var) -> rx.Component:
             padding_y=TABLE_CELL_PADDING_Y,
             vertical_align="middle",
         ),
-        style={"height": f"min(var(--patient-row-fill), {PATIENT_ROW_MAX_HEIGHT})"},
+        style={
+            "height": f"min(var(--patient-row-fill), {PATIENT_ROW_MAX_HEIGHT})",
+            "border_bottom": "1px solid var(--gray-a3)",
+            "transition": "background 150ms ease",
+            "_hover": {"background": "var(--accent-a2)"},
+        },
     )
 
 
@@ -132,7 +146,7 @@ def _mobile_card(row: rx.Var) -> rx.Component:
             align="stretch",
             gap="0.4em",
         ),
-        style=DASHBOARD_CARD_STYLE,
+        style=MOBILE_CARD_STYLE,
         width="100%",
     )
 
@@ -141,12 +155,14 @@ def _pager() -> rx.Component:
     return rx.hstack(
         rx.button(
             rx.icon("chevron-left", size=15),
-            variant="outline",
+            variant="ghost",
             size="1",
             aria_label=COMMON["prev"],
             disabled=MetricsState.patient_page == 0,
             on_click=MetricsState.previous_patient_page,
-            _hover={"cursor": "pointer"},
+            border="1px solid var(--gray-a5)",
+            border_radius="10em",
+            _hover={"cursor": "pointer", "background": "var(--accent-a3)"},
         ),
         rx.text(
             MetricsState.patient_range_label,
@@ -155,16 +171,20 @@ def _pager() -> rx.Component:
         ),
         rx.button(
             rx.icon("chevron-right", size=15),
-            variant="outline",
+            variant="ghost",
             size="1",
             aria_label=COMMON["next"],
             disabled=MetricsState.patient_page >= MetricsState.patient_page_count - 1,
             on_click=MetricsState.next_patient_page,
-            _hover={"cursor": "pointer"},
+            border="1px solid var(--gray-a5)",
+            border_radius="10em",
+            _hover={"cursor": "pointer", "background": "var(--accent-a3)"},
         ),
         justify="between",
+        align="center",
         width="100%",
         flex_wrap="wrap",
+        gap="0.5em",
         margin_top="auto",
     )
 
@@ -190,6 +210,8 @@ def patient_table() -> rx.Component:
                             size="1",
                             color="gray",
                             style={"fontWeight": "600"},
+                            text_transform="uppercase",
+                            letter_spacing="0.08em",
                         ),
                         width=width,
                         padding_y=TABLE_CELL_PADDING_Y,
@@ -240,6 +262,7 @@ def patient_table() -> rx.Component:
         display="flex",
         flex="1",
         flex_direction="column",
+        gap="0.75em",
         width="100%",
     )
     body = rx.box(
@@ -284,17 +307,26 @@ def patient_table() -> rx.Component:
     )
     return rx.box(
         rx.hstack(
+            rx.box(
+                rx.icon("clipboard-list", size=18),
+                style=PANEL_ICON_TILE,
+            ),
             rx.heading(DASHBOARD["patient_table_title"], size="4"),
-            rx.badge(MetricsState.patient_total),
+            rx.badge(MetricsState.patient_total, variant="surface"),
             align="center",
             gap="0.5em",
             width="100%",
         ),
+        rx.box(
+            border_bottom="1px solid var(--gray-a5)",
+            width="100%",
+        ),
         body,
-        style=DASHBOARD_CARD_STYLE,
+        style=PANEL_STYLE,
         width="100%",
         display="flex",
         flex_direction="column",
+        gap="0.75em",
     )
 
 

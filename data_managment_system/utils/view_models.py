@@ -10,12 +10,14 @@ class _FrozenModel(BaseModel):
 class FieldVM(_FrozenModel):
     label: str
     value: str
+    pct: int | None = None
 
 
 class TileVM(_FrozenModel):
     label: str
     value: str
     tone: str
+    width_pct: int = 0
 
 
 class KpiCardVM(_FrozenModel):

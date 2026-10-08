@@ -34,11 +34,28 @@ def _latest[MetricT: (PeriodSummaryMetric, ComorbidityMetric, DataQualityMetric)
     return max(rows, key=lambda row: row.period_start) if rows else None
 
 
+def _display_pct(rate: float | None) -> int | None:
+    """Display-only 0-100 fraction of a 0-1 backend rate; None stays None."""
+    if rate is None:
+        return None
+    return max(0, min(100, round(rate * 100)))
+
+
+def _stage_widths(counts: Sequence[int | None]) -> list[int]:
+    """Scale stage counts to the largest count; 0 when all are 0/None."""
+    values = [0 if count is None else count for count in counts]
+    maximum = max(values, default=0)
+    if maximum <= 0:
+        return [0] * len(values)
+    return [round(value / maximum * 100) for value in values]
+
+
 def build_visits(rows: Sequence[PeriodSummaryMetric]) -> KpiCardVM | None:
     row = _latest(rows)
     if row is None:
         return None
     empty = row.visit_count == 0
+    repeat_rate = None if empty else row.repeat_visit_ratio
     return KpiCardVM(
         fields=[
             FieldVM(
@@ -59,7 +76,8 @@ def build_visits(rows: Sequence[PeriodSummaryMetric]) -> KpiCardVM | None:
             ),
             FieldVM(
                 label=copy.DASHBOARD["repeat_visit_ratio"],
-                value=format_percent(None if empty else row.repeat_visit_ratio),
+                value=format_percent(repeat_rate),
+                pct=_display_pct(repeat_rate),
             ),
         ],
         tiles=[],
@@ -72,19 +90,25 @@ def build_patient_mix(rows: Sequence[PeriodSummaryMetric]) -> KpiCardVM | None:
     if row is None:
         return None
     empty = row.visit_count == 0
+    tha = None if empty else row.pct_tha
+    dtd = None if empty else row.pct_dtd
+    comorbid = None if empty else row.pct_comorbid
     return KpiCardVM(
         fields=[
             FieldVM(
                 label=copy.DASHBOARD["hypertension"],
-                value=format_percent(None if empty else row.pct_tha),
+                value=format_percent(tha),
+                pct=_display_pct(tha),
             ),
             FieldVM(
                 label=copy.DASHBOARD["diabetes"],
-                value=format_percent(None if empty else row.pct_dtd),
+                value=format_percent(dtd),
+                pct=_display_pct(dtd),
             ),
             FieldVM(
                 label=copy.DASHBOARD["comorbid"],
-                value=format_percent(None if empty else row.pct_comorbid),
+                value=format_percent(comorbid),
+                pct=_display_pct(comorbid),
             ),
         ],
         tiles=[],
@@ -99,42 +123,59 @@ def build_clinical_control(
     if row is None:
         return None
     empty = row.visit_count == 0
+    bp_rate = None if empty else row.bp_control_rate
+    glycemic_rate = None if empty else row.glycemic_control_rate
+    stage_counts: list[int | None] = [
+        None if empty else row.bp_stage_normal_count,
+        None if empty else row.bp_stage_elevated_count,
+        None if empty else row.bp_stage_1_count,
+        None if empty else row.bp_stage_2_count,
+        None if empty else row.bp_stage_severe_count,
+    ]
+    widths = _stage_widths(stage_counts)
     return KpiCardVM(
         fields=[
             FieldVM(
                 label=copy.DASHBOARD["bp_control"],
-                value=format_percent(None if empty else row.bp_control_rate),
+                value=format_percent(bp_rate),
+                pct=_display_pct(bp_rate),
             ),
             FieldVM(
                 label=copy.DASHBOARD["glycemic_control"],
-                value=format_percent(None if empty else row.glycemic_control_rate),
+                value=format_percent(glycemic_rate),
+                pct=_display_pct(glycemic_rate),
             ),
         ],
         tiles=[
             TileVM(
                 label=copy.DASHBOARD["normal"],
-                value=format_count(None if empty else row.bp_stage_normal_count),
+                value=format_count(stage_counts[0]),
                 tone="normal",
+                width_pct=widths[0],
             ),
             TileVM(
                 label=copy.DASHBOARD["elevated"],
-                value=format_count(None if empty else row.bp_stage_elevated_count),
+                value=format_count(stage_counts[1]),
                 tone="elevated",
+                width_pct=widths[1],
             ),
             TileVM(
                 label=copy.DASHBOARD["stage_1"],
-                value=format_count(None if empty else row.bp_stage_1_count),
+                value=format_count(stage_counts[2]),
                 tone="stage1",
+                width_pct=widths[2],
             ),
             TileVM(
                 label=copy.DASHBOARD["stage_2"],
-                value=format_count(None if empty else row.bp_stage_2_count),
+                value=format_count(stage_counts[3]),
                 tone="stage2",
+                width_pct=widths[3],
             ),
             TileVM(
                 label=copy.DASHBOARD["severe"],
-                value=format_count(None if empty else row.bp_stage_severe_count),
+                value=format_count(stage_counts[4]),
                 tone="severe",
+                width_pct=widths[4],
             ),
         ],
         empty_note="",
