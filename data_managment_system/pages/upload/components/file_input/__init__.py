@@ -11,7 +11,16 @@ from data_managment_system.models.ingestion import (
     SUPPORTED_FORMATS,
 )
 from data_managment_system.states.upload import FileInputState
-from data_managment_system.theme import responsive
+from data_managment_system.theme import (
+    FLOAT_HOVER,
+    FLOAT_SHADOW,
+    FLOAT_TRANSITION,
+    TEXT_SIZE_1,
+    TEXT_SIZE_2,
+    TEXT_SIZE_3,
+    TEXT_SIZE_4,
+    responsive,
+)
 
 UPLOAD_ID = "upload_files"
 
@@ -65,15 +74,27 @@ def _failure_label(stage: rx.Var[str]) -> rx.Component:
             stage,
             (
                 "presign",
-                rx.text(UPLOAD["failed_presign"], color=rx.color("red", 11), size="1"),
+                rx.text(
+                    UPLOAD["failed_presign"],
+                    color=rx.color("red", 11),
+                    font_size=TEXT_SIZE_1,
+                ),
             ),
             (
                 "storage",
-                rx.text(UPLOAD["failed_storage"], color=rx.color("red", 11), size="1"),
+                rx.text(
+                    UPLOAD["failed_storage"],
+                    color=rx.color("red", 11),
+                    font_size=TEXT_SIZE_1,
+                ),
             ),
             (
                 "record",
-                rx.text(UPLOAD["failed_record"], color=rx.color("red", 11), size="1"),
+                rx.text(
+                    UPLOAD["failed_record"],
+                    color=rx.color("red", 11),
+                    font_size=TEXT_SIZE_1,
+                ),
             ),
             rx.fragment(),
         ),
@@ -122,7 +143,7 @@ def _mapping_row(
                 rx.text(
                     UPLOAD["err_target_empty"],
                     color=rx.color("red", 11),
-                    size="1",
+                    font_size=TEXT_SIZE_1,
                 ),
             ),
             rx.match(
@@ -132,7 +153,7 @@ def _mapping_row(
                     rx.text(
                         UPLOAD["warn_target_duplicate"],
                         color=rx.color("yellow", 11),
-                        size="1",
+                        font_size=TEXT_SIZE_1,
                     ),
                 ),
                 rx.fragment(),
@@ -146,9 +167,17 @@ def _mapping_row(
 def _mapping_block(file_any: Any) -> rx.Component:
     return rx.box(
         rx.hstack(
-            rx.text(UPLOAD["source_column"], size="1", color=rx.color("gray", 10)),
+            rx.text(
+                UPLOAD["source_column"],
+                font_size=TEXT_SIZE_1,
+                color=rx.color("gray", 10),
+            ),
             rx.spacer(),
-            rx.text(UPLOAD["target_column"], size="1", color=rx.color("gray", 10)),
+            rx.text(
+                UPLOAD["target_column"],
+                font_size=TEXT_SIZE_1,
+                color=rx.color("gray", 10),
+            ),
             width="100%",
         ),
         rx.cond(
@@ -156,7 +185,9 @@ def _mapping_block(file_any: Any) -> rx.Component:
             rx.hstack(
                 rx.spinner(size="1"),
                 rx.text(
-                    UPLOAD["mapping_pending"], size="1", color=rx.color("gray", 11)
+                    UPLOAD["mapping_pending"],
+                    font_size=TEXT_SIZE_1,
+                    color=rx.color("gray", 11),
                 ),
                 gap="0.5em",
                 align="center",
@@ -205,7 +236,7 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
             rx.vstack(
                 rx.text(
                     file_any.filename,
-                    size="2",
+                    font_size=TEXT_SIZE_2,
                     weight="medium",
                     overflow="hidden",
                     text_overflow="ellipsis",
@@ -214,10 +245,14 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
                     width="100%",
                 ),
                 rx.hstack(
-                    rx.text(file_any.size_label, size="1", color=rx.color("gray", 11)),
+                    rx.text(
+                        file_any.size_label,
+                        font_size=TEXT_SIZE_1,
+                        color=rx.color("gray", 11),
+                    ),
                     rx.text(
                         rx.cond(is_csv, UPLOAD["kind_csv"], UPLOAD["kind_xlsx"]),
-                        size="1",
+                        font_size=TEXT_SIZE_1,
                         color=rx.color("gray", 11),
                     ),
                     gap="0.5em",
@@ -261,7 +296,9 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
             rx.hstack(
                 rx.spinner(size="1"),
                 rx.text(
-                    UPLOAD["mapping_pending"], size="1", color=rx.color("gray", 11)
+                    UPLOAD["mapping_pending"],
+                    font_size=TEXT_SIZE_1,
+                    color=rx.color("gray", 11),
                 ),
                 gap="0.5em",
                 align="center",
@@ -269,7 +306,7 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
             rx.vstack(
                 rx.text(
                     UPLOAD["columns_count"].format(count=file_any.rows.length()),
-                    size="1",
+                    font_size=TEXT_SIZE_1,
                     color=rx.color("gray", 11),
                 ),
                 rx.cond(
@@ -278,7 +315,7 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
                         UPLOAD["warn_columns_shared"].format(
                             count=file_any.warning_count
                         ),
-                        size="1",
+                        font_size=TEXT_SIZE_1,
                         color=rx.color("yellow", 11),
                     ),
                     rx.fragment(),
@@ -289,7 +326,8 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
         ),
         rx.cond(is_expanded, _mapping_block(file_any), rx.fragment()),
         _failure_label(file_any.failure_stage),
-        border=f"1px solid {rx.color('gray', 4)}",
+        background="var(--gray-a2)",
+        border="1px solid var(--gray-a5)",
         border_radius="0.875em",
         padding="1em",
         width="100%",
@@ -312,10 +350,15 @@ def upload_panel() -> rx.Component:
             align_items="center",
             justify_content="center",
         ),
-        rx.text(UPLOAD["drop_zone"], size="3", weight="medium", text_align="center"),
+        rx.text(
+            UPLOAD["drop_zone"],
+            font_size=TEXT_SIZE_3,
+            weight="medium",
+            text_align="center",
+        ),
         rx.text(
             UPLOAD["supports_files"],
-            size="1",
+            font_size=TEXT_SIZE_1,
             color=rx.color("gray", 11),
             text_align="center",
         ),
@@ -338,13 +381,14 @@ def upload_panel() -> rx.Component:
         flex=rx.cond(FileInputState.has_files, "0", "1"),
         min_height=rx.cond(FileInputState.has_files, "7em", "14em"),
         padding="1.25em",
-        border=f"1.5px dashed {rx.color('accent', 7)}",
+        border="1px dashed var(--gray-a6)",
         border_radius="1em",
-        background=rx.color("accent", 2),
-        transition="0.15s",
+        background="var(--gray-a2)",
+        box_shadow="none",
+        transition=FLOAT_TRANSITION,
         _hover={
+            **FLOAT_HOVER,
             "cursor": "pointer",
-            "border_color": rx.color("accent", 9),
             "background": rx.color("accent", 3),
         },
         width="100%",
@@ -354,27 +398,83 @@ def upload_panel() -> rx.Component:
     )
 
     footer = rx.flex(
-        rx.text(FileInputState.count_label, size="2", weight="medium"),
+        rx.text(FileInputState.count_label, font_size=TEXT_SIZE_2, weight="medium"),
         rx.spacer(),
         rx.hstack(
             rx.button(
                 UPLOAD["clear_all"],
                 variant="soft",
                 color_scheme="gray",
-                size="3",
+                font_size=TEXT_SIZE_3,
+                radius="full",
                 disabled=FileInputState.is_submitting | ~FileInputState.has_files,
                 on_click=FileInputState.clear_all,
-                _hover={"cursor": "pointer"},
+                box_shadow=rx.cond(
+                    FileInputState.is_submitting | ~FileInputState.has_files,
+                    "none",
+                    FLOAT_SHADOW,
+                ),
+                transition=FLOAT_TRANSITION,
+                _hover={
+                    "cursor": rx.cond(
+                        FileInputState.is_submitting | ~FileInputState.has_files,
+                        "not-allowed",
+                        "pointer",
+                    ),
+                    "transform": rx.cond(
+                        FileInputState.is_submitting | ~FileInputState.has_files,
+                        "none",
+                        FLOAT_HOVER["transform"],
+                    ),
+                    "border_color": rx.cond(
+                        FileInputState.is_submitting | ~FileInputState.has_files,
+                        "transparent",
+                        FLOAT_HOVER["border_color"],
+                    ),
+                    "box_shadow": rx.cond(
+                        FileInputState.is_submitting | ~FileInputState.has_files,
+                        "none",
+                        FLOAT_HOVER["box_shadow"],
+                    ),
+                },
             ),
             rx.button(
                 rx.icon("upload"),
                 UPLOAD["upload"],
-                variant="classic",
-                size="4",
+                variant="solid",
+                font_size=TEXT_SIZE_4,
+                radius="full",
                 loading=FileInputState.is_submitting,
                 disabled=FileInputState.is_submitting | ~FileInputState.can_submit,
                 on_click=FileInputState.submit_uploads,
-                _hover={"cursor": "pointer"},
+                box_shadow=rx.cond(
+                    FileInputState.is_submitting | ~FileInputState.can_submit,
+                    "none",
+                    FLOAT_SHADOW,
+                ),
+                transition=FLOAT_TRANSITION,
+                _hover={
+                    "cursor": rx.cond(
+                        FileInputState.is_submitting | ~FileInputState.can_submit,
+                        "not-allowed",
+                        "pointer",
+                    ),
+                    "transform": rx.cond(
+                        FileInputState.is_submitting | ~FileInputState.can_submit,
+                        "none",
+                        FLOAT_HOVER["transform"],
+                    ),
+                    "border_color": rx.cond(
+                        FileInputState.is_submitting | ~FileInputState.can_submit,
+                        "transparent",
+                        FLOAT_HOVER["border_color"],
+                    ),
+                    "box_shadow": rx.cond(
+                        FileInputState.is_submitting | ~FileInputState.can_submit,
+                        "none",
+                        FLOAT_HOVER["box_shadow"],
+                    ),
+                },
                 width=responsive("100%", sm="auto"),
             ),
             gap="0.5em",

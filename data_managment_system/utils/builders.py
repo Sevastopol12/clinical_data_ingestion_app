@@ -252,12 +252,12 @@ def build_data_quality(rows: Sequence[DataQualityMetric]) -> DataQualityVM | Non
             value=format_count(row.total_rows_seen),
         ),
         FieldVM(
-            label=copy.DASHBOARD["rows_clean"],
-            value=format_count(row.accepted_clean_rows),
+            label=copy.DASHBOARD["rows_accepted"],
+            value=format_count(row.accepted_rows),
         ),
         FieldVM(
-            label=copy.DASHBOARD["rows_with_flags"],
-            value=format_count(row.accepted_with_flags_rows),
+            label=copy.DASHBOARD["rows_duplicates"],
+            value=format_count(row.ignored_duplicate_row_count),
         ),
         FieldVM(
             label=copy.DASHBOARD["rows_rejected"],

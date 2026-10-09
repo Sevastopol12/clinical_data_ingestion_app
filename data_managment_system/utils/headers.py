@@ -43,9 +43,9 @@ def _xlsx_headers(content: bytes) -> list[str]:
     workbook = None
     try:
         workbook = load_workbook(BytesIO(content), read_only=True, data_only=True)
-        sheet = workbook.active
-        if sheet is None:
+        if not workbook.worksheets:
             raise HeaderError(HeaderErrorReason.NO_COLUMNS)
+        sheet = workbook.worksheets[0]
         row = next(sheet.iter_rows(values_only=True), ())
         return _validate_headers(
             [cell if isinstance(cell, str) else str(cell or "") for cell in row]

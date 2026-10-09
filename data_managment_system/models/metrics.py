@@ -96,9 +96,9 @@ class DataQualityMetric(BaseModel):
     files_processed: int
     avg_mapping_coverage_ratio: float | None = Field(allow_inf_nan=False)
     total_rows_seen: int
-    accepted_clean_rows: int
-    accepted_with_flags_rows: int
+    accepted_rows: int
     rejected_rows: int
+    ignored_duplicate_row_count: int
     top_issue_codes: list[IssueCodeCount]
     computed_at: ApiDateTime
 
