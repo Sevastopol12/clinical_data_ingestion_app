@@ -10,6 +10,9 @@ from data_managment_system.theme import (
     CARD_BODY_GAP,
     DQ_ISSUE_COLUMN_GAP,
     TEXT_MUTED,
+    TEXT_SIZE_1,
+    TEXT_SIZE_2,
+    TEXT_SIZE_6,
     responsive,
 )
 from data_managment_system.utils.view_models import DataQualityVM
@@ -21,10 +24,10 @@ from .states import _card_state
 def _dq_tile(field: rx.Var) -> rx.Component:
     field_any: Any = field
     return rx.vstack(
-        rx.text(field_any.label, size="1", color=TEXT_MUTED),
+        rx.text(field_any.label, font_size=TEXT_SIZE_1, color=TEXT_MUTED),
         rx.text(
             field_any.value,
-            size="6",
+            font_size=TEXT_SIZE_6,
             weight="bold",
             font_variant_numeric="tabular-nums",
         ),
@@ -44,13 +47,13 @@ def _issue_row(item: rx.Var) -> rx.Component:
     return rx.vstack(
         rx.hstack(
             rx.hstack(
-                rx.text(item_any.title, weight="medium", size="2"),
+                rx.text(item_any.title, weight="medium", font_size=TEXT_SIZE_2),
                 rx.cond(
                     item_any.field != "",
                     rx.badge(
                         item_any.field,
                         variant="soft",
-                        size="1",
+                        font_size=TEXT_SIZE_1,
                         radius="large",
                         title=item_any.field_hint,
                         font_family=rx.cond(
@@ -89,6 +92,8 @@ def _issue_row(item: rx.Var) -> rx.Component:
             height="0.3em",
             background="var(--gray-a4)",
             border_radius="999em",
+            pointer_events="none",
+            aria_hidden="true",
         ),
         align="stretch",
         gap="0.35em",
@@ -106,7 +111,7 @@ def data_quality_card(
     coverage = rx.box(
         rx.text(
             DASHBOARD["dq_group_coverage"],
-            size="1",
+            font_size=TEXT_SIZE_1,
             color=TEXT_MUTED,
             text_transform="uppercase",
         ),
@@ -122,7 +127,7 @@ def data_quality_card(
     rows = rx.box(
         rx.text(
             DASHBOARD["dq_group_rows"],
-            size="1",
+            font_size=TEXT_SIZE_1,
             color=TEXT_MUTED,
             text_transform="uppercase",
         ),
@@ -185,7 +190,7 @@ def data_quality_card(
     )
     toggle_btn = rx.el.button(
         rx.hstack(
-            rx.text(toggle_label, size="1"),
+            rx.text(toggle_label, font_size=TEXT_SIZE_1),
             chevron,
             gap="0.25em",
             align="center",

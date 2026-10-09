@@ -9,6 +9,8 @@ from data_managment_system.theme import (
     PANEL_ICON_TILE,
     PANEL_STYLE,
     TEXT_MUTED,
+    TEXT_SIZE_1,
+    TEXT_SIZE_3,
 )
 
 from .period import period_selector
@@ -85,7 +87,6 @@ def card_shell(
     footer_start: rx.Component | None = None,
     period_note: str | None = None,
     icon: str = "activity",
-    featured: bool = False,
 ) -> rx.Component:
     period_label = rx.match(
         MetricsState.grain_by_card[card_id],
@@ -93,10 +94,10 @@ def card_shell(
         PERIOD_LABELS["TODAY"],
     )
     header_period = rx.hstack(
-        rx.text(period_label, size="1", color=TEXT_MUTED),
+        rx.text(period_label, font_size=TEXT_SIZE_1, color=TEXT_MUTED),
         rx.cond(
             period_note is not None,
-            rx.text(f" · {period_note}", size="1", color=TEXT_MUTED),
+            rx.text(f" · {period_note}", font_size=TEXT_SIZE_1, color=TEXT_MUTED),
             rx.fragment(),
         ),
         gap="0em",
@@ -108,7 +109,7 @@ def card_shell(
                 rx.icon(icon, size=16),
                 style=PANEL_ICON_TILE,
             ),
-            rx.text(title, size="3", weight="bold"),
+            rx.text(title, font_size=TEXT_SIZE_3, weight="bold"),
             gap="0.6em",
             align="center",
             min_width="0",
@@ -129,6 +130,8 @@ def card_shell(
         rx.box(period_selector(card_id), margin_left="auto"),
         align="center",
         width="100%",
+        flex_wrap="wrap",
+        gap="0.5em",
     )
     content = rx.flex(
         header,
@@ -142,43 +145,12 @@ def card_shell(
         position="relative",
         z_index="1",
     )
-    glow = rx.box(
-        class_name="dash-panel-glow",
-        aria_hidden="true",
-        position="absolute",
-        top="0",
-        left="0",
-        right="0",
-        height="10em",
-        background=(
-            "radial-gradient(ellipse at 50% 0%, var(--accent-a3), transparent 60%)"
-        ),
-        opacity="0",
-        pointer_events="none",
-    )
-    decorations: list[rx.Component] = [glow]
-    if featured:
-        decorations.append(
-            rx.box(
-                aria_hidden="true",
-                position="absolute",
-                top="0",
-                left="0",
-                right="0",
-                height="1px",
-                background=(
-                    "linear-gradient(90deg, transparent, var(--accent-a8), transparent)"
-                ),
-                pointer_events="none",
-            )
-        )
+    decorations: list[rx.Component] = []
     decorations.append(_tick("top-left"))
     decorations.append(_tick("top-right"))
     decorations.append(_tick("bottom-left"))
     decorations.append(_tick("bottom-right"))
     style = dict(PANEL_STYLE)
-    if featured:
-        style["border_color"] = "var(--accent-a6)"
     return rx.box(
         *decorations,
         content,

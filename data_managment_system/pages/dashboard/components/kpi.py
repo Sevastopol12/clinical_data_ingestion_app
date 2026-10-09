@@ -10,11 +10,20 @@ from data_managment_system.theme import (
     CARD_BODY_GAP,
     KPI_MIN_HEIGHT,
     TEXT_MUTED,
+    TEXT_SIZE_1,
+    TEXT_SIZE_2,
+    TEXT_SIZE_3,
+    TEXT_SIZE_5,
+    TEXT_SIZE_6,
+    TEXT_SIZE_8,
 )
 from data_managment_system.utils.view_models import KpiCardVM
 
-from .shell import card_shell
+from .gauge import bar, ring_gauge
+from .shell import CARD_ICONS, card_shell
 from .states import _card_state
+
+_MISSING = COMMON["missing"]
 
 
 def _field(field: rx.Var) -> rx.Component:
@@ -32,12 +41,17 @@ def _field(field: rx.Var) -> rx.Component:
 def _stat(field: rx.Var) -> rx.Component:
     field_any: Any = field
     return rx.vstack(
-        rx.text(field_any.label, size="1", color="var(--gray-11)"),
+        rx.text(field_any.label, font_size=TEXT_SIZE_1, color="var(--gray-11)"),
         rx.text(
             field_any.value,
-            size="5",
+            font_size=TEXT_SIZE_8,
             weight="bold",
             font_variant_numeric="tabular-nums",
+            padding_bottom="0.2em",
+            background="linear-gradient(180deg, var(--gray-12), var(--gray-9))",
+            background_clip="text",
+            color="transparent",
+            style={"-webkit-background-clip": "text"},
         ),
         align="start",
     )
@@ -53,10 +67,28 @@ def _tile(tile: rx.Var) -> rx.Component:
         ("stage2", f"3px solid {BP_STAGE_COLORS['stage2']}"),
         f"3px solid {BP_STAGE_COLORS['severe']}",
     )
-    return rx.hstack(
-        rx.text(tile_any.label),
-        rx.text(tile_any.value, weight="bold", font_variant_numeric="tabular-nums"),
-        justify="between",
+    fill: Any = rx.match(
+        tile_any.tone,
+        ("normal", BP_STAGE_COLORS["normal"]),
+        ("elevated", BP_STAGE_COLORS["elevated"]),
+        ("stage1", BP_STAGE_COLORS["stage1"]),
+        ("stage2", BP_STAGE_COLORS["stage2"]),
+        BP_STAGE_COLORS["severe"],
+    )
+    return rx.vstack(
+        rx.hstack(
+            rx.text(tile_any.label),
+            rx.text(tile_any.value, weight="bold", font_variant_numeric="tabular-nums"),
+            justify="between",
+            width="100%",
+        ),
+        rx.cond(
+            tile_any.value != _MISSING,
+            bar(tile_any.width_pct, fill),
+            rx.fragment(),
+        ),
+        align="stretch",
+        gap="0.35em",
         width="100%",
         border_left=border,
         padding_left="0.6em",
@@ -66,10 +98,10 @@ def _tile(tile: rx.Var) -> rx.Component:
 def _row(field: rx.Var) -> rx.Component:
     field_any: Any = field
     return rx.hstack(
-        rx.text(field_any.label, size="2", color=TEXT_MUTED),
+        rx.text(field_any.label, font_size=TEXT_SIZE_2, color=TEXT_MUTED),
         rx.text(
             field_any.value,
-            size="3",
+            font_size=TEXT_SIZE_3,
             weight="bold",
             font_variant_numeric="tabular-nums",
         ),
@@ -81,17 +113,57 @@ def _row(field: rx.Var) -> rx.Component:
     )
 
 
-def _split_stat(field: rx.Var) -> rx.Component:
+def _mix_row(field: rx.Var) -> rx.Component:
     field_any: Any = field
     return rx.vstack(
-        rx.text(field_any.label, size="1", color=TEXT_MUTED),
-        rx.text(
-            field_any.value,
-            size="5",
-            weight="bold",
-            font_variant_numeric="tabular-nums",
+        rx.hstack(
+            rx.text(field_any.label, font_size=TEXT_SIZE_2, color=TEXT_MUTED),
+            rx.text(
+                field_any.value,
+                font_size=TEXT_SIZE_3,
+                weight="bold",
+                font_variant_numeric="tabular-nums",
+            ),
+            justify="between",
+            align="center",
+            width="100%",
         ),
-        align="start",
+        rx.cond(
+            field_any.value != _MISSING,
+            bar(field_any.pct),
+            rx.fragment(),
+        ),
+        align="stretch",
+        gap="0.35em",
+        width="100%",
+        min_height="2.25em",
+        border_bottom="1px solid var(--gray-a3)",
+        padding_bottom="0.4em",
+    )
+
+
+def _split_stat(field: rx.Var) -> rx.Component:
+    field_any: Any = field
+    return rx.hstack(
+        rx.cond(
+            field_any.value != _MISSING,
+            ring_gauge(field_any.pct),
+            rx.fragment(),
+        ),
+        rx.vstack(
+            rx.text(field_any.label, font_size=TEXT_SIZE_1, color=TEXT_MUTED),
+            rx.text(
+                field_any.value,
+                font_size=TEXT_SIZE_5,
+                weight="bold",
+                font_variant_numeric="tabular-nums",
+            ),
+            align="start",
+            gap="0.1em",
+        ),
+        align="center",
+        gap="0.75em",
+        width="100%",
     )
 
 
@@ -102,14 +174,21 @@ def kpi_card(
     stats: int = 0,
     on_retry: rx.EventHandler | None = None,
     layout: Literal["default", "rows", "split"] = "default",
+    icon: str | None = None,
 ) -> rx.Component:
+    resolved_icon = icon if icon is not None else CARD_ICONS.get(card_id, "activity")
     if layout == "rows":
-        ready = rx.vstack(rx.foreach(vm.fields, _row), gap=CARD_BODY_GAP)
+        row_fn = _mix_row if card_id == "patient_mix" else _row
+        ready = rx.vstack(rx.foreach(vm.fields, row_fn), gap=CARD_BODY_GAP)
     elif layout == "split":
         ready = rx.grid(
             rx.vstack(rx.foreach(vm.fields, _split_stat), gap=CARD_BODY_GAP),
             rx.vstack(
-                rx.text(DASHBOARD["stage_breakdown"], size="1", color=TEXT_MUTED),
+                rx.text(
+                    DASHBOARD["stage_breakdown"],
+                    font_size=TEXT_SIZE_1,
+                    color=TEXT_MUTED,
+                ),
                 rx.vstack(rx.foreach(vm.tiles, _tile), gap=CARD_BODY_GAP),
                 gap=CARD_BODY_GAP,
             ),
@@ -132,7 +211,7 @@ def kpi_card(
             gap=CARD_BODY_GAP,
         )
     empty = rx.vstack(
-        rx.text(COMMON["missing"], size="6", weight="bold"),
+        rx.text(COMMON["missing"], font_size=TEXT_SIZE_6, weight="bold"),
         rx.text(COMMON["no_visits"]),
     )
     return card_shell(
@@ -140,4 +219,5 @@ def kpi_card(
         card_id,
         _card_state(card_id, ready, empty, on_retry),
         min_height=KPI_MIN_HEIGHT,
+        icon=resolved_icon,
     )

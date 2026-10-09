@@ -1,4 +1,4 @@
-"""Login layout components (brand bar, hero, glass card, fields, CTA)."""
+"""Login layout components (brand bar, glass card, fields, CTA)."""
 
 from typing import Literal, cast
 
@@ -7,13 +7,19 @@ import reflex as rx
 from data_managment_system.copy import AUTH
 from data_managment_system.states.auth import AuthState
 from data_managment_system.states.login_ui import LoginUiState
-from data_managment_system.theme import TEXT_MUTED, responsive
+from data_managment_system.theme import (
+    LOGIN_BUTTON_MIN_HEIGHT,
+    LOGIN_CARD_HOVER,
+    TEXT_MUTED,
+    TEXT_SIZE_1,
+    TEXT_SIZE_2,
+    TEXT_SIZE_3,
+    TEXT_SIZE_5,
+    responsive,
+)
 
 _RATE_PREFIX, _RATE_SUFFIX = AUTH["err_rate_limited"].split("{seconds}")
 
-HERO_GAP = "1em"
-HERO_CARD_GAP = "1.25em"
-CONTENT_GAP = "2em"
 CARD_PADDING_MOBILE = "1.5em"
 CARD_PADDING_DESKTOP = "2em"
 CARD_TITLE_GAP = "2em"
@@ -33,7 +39,7 @@ SCRIM_BACKGROUND = (
 
 
 def hero_scrim() -> rx.Component:
-    """Soft dark scrim behind the hero and card (decor only)."""
+    """Soft dark scrim behind the card (decor only)."""
     return rx.box(
         position="absolute",
         left="50%",
@@ -62,7 +68,7 @@ def brand_bar() -> rx.Component:
             align_items="center",
             justify_content="center",
         ),
-        rx.text(AUTH["brand"], size="2", weight="medium"),
+        rx.text(AUTH["brand"], font_size=TEXT_SIZE_2, weight="medium"),
         direction="row",
         align="center",
         justify="start",
@@ -72,61 +78,6 @@ def brand_bar() -> rx.Component:
         padding_y=BRAND_PADDING_Y,
         position="relative",
         z_index="2",
-    )
-
-
-def hero() -> rx.Component:
-    """Eyebrow pill, gradient headline and muted subhead."""
-    return rx.flex(
-        rx.flex(
-            rx.box(
-                background="var(--accent-9)",
-                border_radius="1em",
-                box_shadow="0 0 0.75em var(--accent-9)",
-                width="0.4em",
-                height="0.4em",
-            ),
-            rx.text(
-                AUTH["eyebrow"],
-                size="1",
-                color=TEXT_MUTED,
-                letter_spacing="0.14em",
-                style={"text_transform": "uppercase"},
-            ),
-            direction="row",
-            align="center",
-            gap="0.5em",
-            border="1px solid var(--gray-a5)",
-            border_radius="1em",
-            background="var(--gray-a2)",
-            padding_x="0.8em",
-            padding_y="0.4em",
-        ),
-        rx.heading(
-            AUTH["headline"],
-            as_="h1",
-            size=responsive("7", md="9"),
-            weight="bold",
-            letter_spacing="-0.03em",
-            line_height="1.05",
-            # Intentional exception: self-relative em padding so background-clip text never clips descenders.
-            padding_bottom="0.2em",
-            text_align="center",
-            background="linear-gradient(180deg, var(--gray-12), var(--gray-9))",
-            background_clip="text",
-            color="transparent",
-            style={"-webkit-background-clip": "text", "font_weight": "600"},
-        ),
-        rx.box(
-            rx.text(AUTH["subhead"], size="3", color=TEXT_MUTED, text_align="center"),
-            width="100%",
-            max_width="30em",
-        ),
-        direction="column",
-        align="center",
-        gap=HERO_GAP,
-        width="100%",
-        class_name="login-rise",
     )
 
 
@@ -190,14 +141,14 @@ def field(
     control = rx.input(
         *slots,
         name=name,
-        size="3",
+        font_size=TEXT_SIZE_3,
         variant="surface",
         width="100%",
         type=input_type,
         custom_attrs={"autocomplete": autocomplete},
     )
     return rx.vstack(
-        rx.text(label, size="2", weight="medium"),
+        rx.text(label, font_size=TEXT_SIZE_2, weight="medium"),
         control,
         gap=LABEL_GAP,
         width="100%",
@@ -214,9 +165,13 @@ def submit_button() -> rx.Component:
             rx.fragment(rx.text(AUTH["sign_in"]), rx.icon("arrow-right")),
         ),
         type="submit",
-        size="3",
+        size="4",
         radius="full",
         width="100%",
+        min_height=LOGIN_BUTTON_MIN_HEIGHT,
+        display="flex",
+        align_items="center",
+        justify_content="center",
         disabled=AuthState.is_logging_in,
         box_shadow="0 0 2em var(--accent-a5)",
         transition="box-shadow 150ms ease, transform 150ms ease",
@@ -228,7 +183,7 @@ def login_card() -> rx.Component:
     """Glass sign-in card with the login form."""
     return rx.box(
         rx.flex(
-            rx.heading(AUTH["title"], as_="h2", size="5"),
+            rx.heading(AUTH["title"], as_="h2", font_size=TEXT_SIZE_5),
             rx.flex(
                 error_callout(),
                 rx.form(
@@ -277,6 +232,7 @@ def login_card() -> rx.Component:
         width="100%",
         max_width="26em",
         _focus_within={"border_color": "var(--accent-a8)"},
+        _hover=LOGIN_CARD_HOVER,
         class_name="login-rise login-rise-2",
     )
 
@@ -284,7 +240,9 @@ def login_card() -> rx.Component:
 def footer_note() -> rx.Component:
     """Muted authorized-staff-only footer line."""
     return rx.box(
-        rx.text(AUTH["footer"], size="1", color=TEXT_MUTED, text_align="center"),
+        rx.text(
+            AUTH["footer"], font_size=TEXT_SIZE_1, color=TEXT_MUTED, text_align="center"
+        ),
         width="100%",
         display="flex",
         justify_content="center",
@@ -301,11 +259,8 @@ __all__ = [
     "CARD_PADDING_DESKTOP",
     "CARD_PADDING_MOBILE",
     "CARD_TITLE_GAP",
-    "CONTENT_GAP",
     "FIELD_GAP",
     "FORM_BUTTON_GAP",
-    "HERO_CARD_GAP",
-    "HERO_GAP",
     "LABEL_GAP",
     "SCRIM_BACKGROUND",
     "SCRIM_HEIGHT",
@@ -314,7 +269,6 @@ __all__ = [
     "error_callout",
     "field",
     "footer_note",
-    "hero",
     "hero_scrim",
     "login_card",
     "submit_button",

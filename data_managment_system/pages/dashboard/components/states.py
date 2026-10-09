@@ -6,6 +6,7 @@ import reflex as rx
 
 from data_managment_system.copy import COMMON
 from data_managment_system.states.metrics import MetricsState
+from data_managment_system.theme import TEXT_SIZE_1
 
 
 def _retry(on_retry: rx.EventHandler | None) -> rx.Component:
@@ -13,11 +14,15 @@ def _retry(on_retry: rx.EventHandler | None) -> rx.Component:
         rx.icon_button(
             rx.icon("rotate-ccw", size=16),
             variant="ghost",
-            size="1",
+            font_size=TEXT_SIZE_1,
             color_scheme="gray",
             aria_label=COMMON["retry"],
             on_click=on_retry,
             _hover={"cursor": "pointer"},
+            _focus_visible={
+                "outline": "2px solid var(--accent-8)",
+                "outline_offset": "1px",
+            },
         ),
         content=COMMON["retry"],
     )

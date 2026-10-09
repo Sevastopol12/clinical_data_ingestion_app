@@ -26,6 +26,16 @@ BP_STAGE_COLORS = {
 }
 
 FONT_FAMILY = "Cabin, system-ui, sans-serif"
+
+# Text sizes in em (Radix size token -> em at a 16px base).
+TEXT_SIZE_1 = "0.75em"
+TEXT_SIZE_2 = "0.875em"
+TEXT_SIZE_3 = "1em"
+TEXT_SIZE_4 = "1.125em"
+TEXT_SIZE_5 = "1.25em"
+TEXT_SIZE_6 = "1.5em"
+TEXT_SIZE_7 = "2em"
+TEXT_SIZE_8 = "2.5em"
 PAGE_MAX_WIDTH = "1600px"
 SECTION_GAP = "0.75em"
 CARD_STYLE = {
@@ -37,6 +47,8 @@ CARD_STYLE = {
     "transition": "border-color 150ms ease",
     "_hover": {"border_color": "var(--accent-a7)"},
 }
+LOGIN_BUTTON_MIN_HEIGHT = "2.4em"
+LOGIN_CARD_HOVER = {"border_color": "var(--gray-a5)"}
 DASHBOARD_GAP = "0.75em"
 # Desktop spacing breakpoint -> lg
 SPACING_BREAKPOINT = "lg"
@@ -88,6 +100,14 @@ PERIOD_SELECTED_BG = "var(--accent-a5)"
 FLOAT_SHADOW = "0 0.15em 0.35em rgba(0, 0, 0, 0.18)"
 FLOAT_SHADOW_HOVER = "0 0.2em 0.4em rgba(0, 0, 0, 0.22)"
 FLOAT_SHADOW_SELECTED = "0 0.25em 0.5em rgba(124, 58, 237, 0.28)"
+FLOAT_HOVER = {
+    "transform": "translateY(-1px)",
+    "border_color": "var(--accent-a8)",
+    "box_shadow": FLOAT_SHADOW_SELECTED,
+}
+FLOAT_TRANSITION = (
+    "transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease"
+)
 DASHBOARD_CARD_STYLE = {**CARD_STYLE, "padding": CARD_PADDING_COMPACT}
 SURFACE_ROW_STYLE = {
     "background": "var(--gray-a2)",

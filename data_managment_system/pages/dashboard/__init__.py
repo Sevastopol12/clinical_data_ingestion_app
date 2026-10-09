@@ -10,6 +10,7 @@ from data_managment_system.pages.dashboard.components import (
     ranking_card,
 )
 from data_managment_system.pages.dashboard.header import hero, topbar
+from data_managment_system.pages.dashboard.motion import dashboard_motion
 from data_managment_system.pages.dashboard.table import patient_table
 from data_managment_system.pages.gate import gated
 from data_managment_system.pages.upload import upload_dialog, upload_fab
@@ -33,6 +34,7 @@ def index() -> rx.Component:
     return gated(
         rx.box(
             dashboard_backdrop(),
+            dashboard_motion(),
             topbar(),
             rx.box(
                 hero(),
@@ -44,6 +46,7 @@ def index() -> rx.Component:
                                 "visits",
                                 MetricsState.visits,
                                 stats=1,
+                                icon="users",
                             ),
                             min_width="0",
                         ),
@@ -53,6 +56,7 @@ def index() -> rx.Component:
                                 "patient_mix",
                                 MetricsState.patient_mix,
                                 layout="rows",
+                                icon="pie-chart",
                             ),
                             min_width="0",
                         ),
@@ -62,6 +66,7 @@ def index() -> rx.Component:
                                 "glucose_hba1c",
                                 MetricsState.glucose_hba1c,
                                 layout="rows",
+                                icon="droplet",
                             ),
                             min_width="0",
                         ),
@@ -87,6 +92,7 @@ def index() -> rx.Component:
                                 "clinical_control",
                                 MetricsState.clinical_control,
                                 layout="split",
+                                icon="heart-pulse",
                             ),
                             min_width="0",
                         ),
@@ -134,6 +140,7 @@ def index() -> rx.Component:
             background_attachment="fixed",
             width="100%",
             min_height="100vh",
+            class_name="dash-scope",
         )
     )
 

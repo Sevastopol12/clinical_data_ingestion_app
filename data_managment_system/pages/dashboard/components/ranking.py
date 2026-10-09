@@ -41,6 +41,8 @@ def ranking_card(
                 height="0.3em",
                 background="var(--gray-a3)",
                 border_radius="999em",
+                pointer_events="none",
+                aria_hidden="true",
             ),
             width="100%",
             align="stretch",

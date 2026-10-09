@@ -10,6 +10,10 @@ from data_managment_system.theme import (
     DESKTOP_PAGE_PADDING_X,
     PANEL_ICON_TILE,
     TEXT_MUTED,
+    TEXT_SIZE_1,
+    TEXT_SIZE_2,
+    TEXT_SIZE_7,
+    TEXT_SIZE_8,
     TOPBAR_STYLE,
     responsive,
 )
@@ -35,7 +39,7 @@ def _freshness_chip() -> rx.Component:
         rx.badge(
             rx.hstack(rx.icon("refresh-cw", size=14), chip, gap="0.25em"),
             variant="surface",
-            size="1",
+            font_size=TEXT_SIZE_1,
             _hover={"cursor": "pointer"},
             on_click=MetricsState.refresh,
         ),
@@ -46,11 +50,16 @@ def _freshness_chip() -> rx.Component:
 def _logout_button() -> rx.Component:
     return rx.tooltip(
         rx.icon_button(
-            rx.icon("log-out"),
+            rx.hstack(rx.icon("log-out"), width="100%", align="end"),
             aria_label=AUTH["logout_label"],
             variant="ghost",
+            width="2em",
             on_click=AuthState.logout,
             _hover={"cursor": "pointer"},
+            _focus_visible={
+                "outline": "2px solid var(--accent-8)",
+                "outline_offset": "1px",
+            },
         ),
         content=AUTH["logout_tooltip"],
     )
@@ -64,15 +73,20 @@ def topbar() -> rx.Component:
                     rx.icon("activity", size=16),
                     style=PANEL_ICON_TILE,
                 ),
-                rx.text(AUTH["brand"], size="2", weight="medium"),
+                rx.text(AUTH["brand"], font_size=TEXT_SIZE_2, weight="medium"),
                 gap="0.6em",
                 align="center",
             ),
             rx.hstack(
                 _freshness_chip(),
-                _logout_button(),
-                gap="0.5em",
+                rx.box(
+                    _logout_button(),
+                    position="relative",
+                    left="4em",
+                ),
+                gap="0.75em",
                 align="center",
+                justify="end",
             ),
             justify="between",
             align="center",
@@ -103,7 +117,7 @@ def hero() -> rx.Component:
                 ),
                 rx.text(
                     DASHBOARD["eyebrow"],
-                    size="1",
+                    font_size=TEXT_SIZE_1,
                     color=TEXT_MUTED,
                     letter_spacing="0.14em",
                     style={"text_transform": "uppercase"},
@@ -120,7 +134,7 @@ def hero() -> rx.Component:
             rx.heading(
                 DASHBOARD["title"],
                 as_="h1",
-                size=responsive("7", lg="8"),
+                font_size=responsive(TEXT_SIZE_7, lg=TEXT_SIZE_8),
                 letter_spacing="-0.03em",
                 line_height="1.05",
                 # Self-relative em padding so background-clip text never clips descenders.
@@ -130,7 +144,6 @@ def hero() -> rx.Component:
                 color="transparent",
                 style={"-webkit-background-clip": "text", "font_weight": "600"},
             ),
-            rx.text(DASHBOARD["hero_sub"], size="3", color=TEXT_MUTED),
             direction="column",
             align="start",
             gap="1em",

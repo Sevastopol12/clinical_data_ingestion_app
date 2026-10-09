@@ -12,6 +12,8 @@ from data_managment_system.theme import (
     PANEL_STYLE,
     PATIENT_ROW_MAX_HEIGHT,
     TABLE_CELL_PADDING_Y,
+    TEXT_SIZE_1,
+    TEXT_SIZE_4,
     responsive,
 )
 
@@ -35,7 +37,7 @@ def _badges(row: rx.Var) -> rx.Component:
         return rx.badge(
             item_any.label,
             variant="soft",
-            size="1",
+            font_size=TEXT_SIZE_1,
             color_scheme=item_any.tone,
         )
 
@@ -50,16 +52,16 @@ def _readings(row: rx.Var) -> rx.Component:
     row_any: Any = row
     return rx.vstack(
         rx.hstack(
-            rx.text(COMMON["readings_bp"], color="gray", size="1"),
-            rx.text(row_any.bp, size="1"),
+            rx.text(COMMON["readings_bp"], color="gray", font_size=TEXT_SIZE_1),
+            rx.text(row_any.bp, font_size=TEXT_SIZE_1),
         ),
         rx.hstack(
-            rx.text(COMMON["readings_glucose"], color="gray", size="1"),
-            rx.text(row_any.glucose, size="1"),
+            rx.text(COMMON["readings_glucose"], color="gray", font_size=TEXT_SIZE_1),
+            rx.text(row_any.glucose, font_size=TEXT_SIZE_1),
         ),
         rx.hstack(
-            rx.text(COMMON["readings_hba1c"], color="gray", size="1"),
-            rx.text(row_any.hba1c, size="1"),
+            rx.text(COMMON["readings_hba1c"], color="gray", font_size=TEXT_SIZE_1),
+            rx.text(row_any.hba1c, font_size=TEXT_SIZE_1),
         ),
         align="start",
         gap="0.1em",
@@ -93,7 +95,7 @@ def _desktop_row(row: rx.Var) -> rx.Component:
                 rx.text(
                     row_any.address,
                     color="gray",
-                    size="1",
+                    font_size=TEXT_SIZE_1,
                     custom_attrs={"title": row_any.address},
                     overflow="hidden",
                     text_overflow="ellipsis",
@@ -156,13 +158,17 @@ def _pager() -> rx.Component:
         rx.button(
             rx.icon("chevron-left", size=15),
             variant="ghost",
-            size="1",
+            font_size=TEXT_SIZE_1,
             aria_label=COMMON["prev"],
             disabled=MetricsState.patient_page == 0,
             on_click=MetricsState.previous_patient_page,
             border="1px solid var(--gray-a5)",
             border_radius="10em",
             _hover={"cursor": "pointer", "background": "var(--accent-a3)"},
+            _focus_visible={
+                "outline": "2px solid var(--accent-8)",
+                "outline_offset": "1px",
+            },
         ),
         rx.text(
             MetricsState.patient_range_label,
@@ -172,13 +178,17 @@ def _pager() -> rx.Component:
         rx.button(
             rx.icon("chevron-right", size=15),
             variant="ghost",
-            size="1",
+            font_size=TEXT_SIZE_1,
             aria_label=COMMON["next"],
             disabled=MetricsState.patient_page >= MetricsState.patient_page_count - 1,
             on_click=MetricsState.next_patient_page,
             border="1px solid var(--gray-a5)",
             border_radius="10em",
             _hover={"cursor": "pointer", "background": "var(--accent-a3)"},
+            _focus_visible={
+                "outline": "2px solid var(--accent-8)",
+                "outline_offset": "1px",
+            },
         ),
         justify="between",
         align="center",
@@ -207,7 +217,7 @@ def patient_table() -> rx.Component:
                     rx.table.column_header_cell(
                         rx.text(
                             item,
-                            size="1",
+                            font_size=TEXT_SIZE_1,
                             color="gray",
                             style={"fontWeight": "600"},
                             text_transform="uppercase",
@@ -311,7 +321,7 @@ def patient_table() -> rx.Component:
                 rx.icon("clipboard-list", size=18),
                 style=PANEL_ICON_TILE,
             ),
-            rx.heading(DASHBOARD["patient_table_title"], size="4"),
+            rx.heading(DASHBOARD["patient_table_title"], font_size=TEXT_SIZE_4),
             rx.badge(MetricsState.patient_total, variant="surface"),
             align="center",
             gap="0.5em",

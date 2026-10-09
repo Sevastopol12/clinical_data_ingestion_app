@@ -93,7 +93,6 @@ DASHBOARD = {
     "dq_more": "More",
     "dq_less": "Less",
     "eyebrow": "Facility overview",
-    "hero_sub": "Hypertension and diabetes control across your facility.",
 }
 
 ISSUE_CODE_LABELS = {
@@ -180,9 +179,6 @@ AUTH = {
     "logout_warning": "Signed out here, but the server could not confirm it.",
     "loading": "Loading…",
     "brand": "Clinical Data Control Center",
-    "eyebrow": "Facility staff",
-    "headline": "Know how your facility is doing.",
-    "subhead": ("Hypertension and diabetes control metrics from your uploaded data."),
     "show_password": "Show password",
     "hide_password": "Hide password",
     "footer": "Authorized facility staff only",
