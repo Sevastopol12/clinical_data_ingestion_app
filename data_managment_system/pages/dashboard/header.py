@@ -50,10 +50,16 @@ def _freshness_chip() -> rx.Component:
 def _logout_button() -> rx.Component:
     return rx.tooltip(
         rx.icon_button(
-            rx.hstack(rx.icon("log-out"), width="100%", align="end"),
+            rx.hstack(
+                rx.text(AUTH["logout_label"]),
+                rx.icon("log-out"),
+                width="100%",
+                align="center",
+                justify="center"
+            ),
             aria_label=AUTH["logout_label"],
-            variant="ghost",
-            width="2em",
+            variant="solid",
+            width="7em",
             on_click=AuthState.logout,
             _hover={"cursor": "pointer"},
             _focus_visible={
@@ -79,12 +85,9 @@ def topbar() -> rx.Component:
             ),
             rx.hstack(
                 _freshness_chip(),
-                rx.box(
-                    _logout_button(),
-                    position="relative",
-                    left="4em",
-                ),
-                gap="0.75em",
+                _logout_button(),
+                position="relative",
+                gap="0.5em",
                 align="center",
                 justify="end",
             ),
