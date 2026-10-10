@@ -1,6 +1,7 @@
 """Pure builders for metric DTOs and display-ready view models."""
 
 from collections.abc import Sequence
+from pathlib import PurePath
 
 from data_managment_system import copy
 from data_managment_system.models.metrics import (
@@ -325,8 +326,8 @@ def build_rejection_rows(items: Sequence[RejectedFile]) -> list[RejectionRowVM]:
         rows.append(
             RejectionRowVM(
                 file_id=str(item.file_id),
-                title=item.source_filename or copy.REJECTIONS["fallback_title"],
-                kind=_rejection_kind(item.source_filename),
+                title=item.filename or copy.REJECTIONS["fallback_title"],
+                kind=_rejection_kind(item.filename),
                 created_label=format_datetime_abs(item.artifact_created_at),
                 expiry_label=format_datetime_abs(item.artifact_expires_at),
                 rows_label=_rejection_rows_label(item.rejected_row_count),
@@ -335,6 +336,22 @@ def build_rejection_rows(items: Sequence[RejectedFile]) -> list[RejectionRowVM]:
             )
         )
     return rows
+
+
+def build_rejection_download_filename(title: str, file_id: str) -> str:
+    """Saved-file name for a downloaded rejection artifact.
+
+    Mirrors the row's displayed ``title`` (the original uploaded file's
+    name, see ``build_rejection_rows``) so the file a user saves to disk
+    reads like ``patients_march_rejected.xlsx`` instead of the opaque
+    ``rejected_<file_id>.xlsx`` the backend falls back to. Only drops back
+    to the id-based name when there is no real source filename to build
+    from (``title`` holding the copy fallback string in that case).
+    """
+    stem = "" if title == copy.REJECTIONS["fallback_title"] else PurePath(title).stem
+    if not stem:
+        return f"rejected_{file_id}.xlsx"
+    return f"{stem}_rejected.xlsx"
 
 
 def mark_row_expired(row: RejectionRowVM) -> RejectionRowVM:

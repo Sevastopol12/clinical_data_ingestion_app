@@ -9,7 +9,7 @@ class RejectedFile(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     file_id: UUID
-    source_filename: str | None = None
+    filename: str | None = None
     artifact_created_at: ApiDateTime | None = None
     artifact_expires_at: ApiDateTime | None = None
     rejected_row_count: int = 0

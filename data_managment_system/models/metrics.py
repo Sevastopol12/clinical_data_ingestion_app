@@ -15,7 +15,7 @@ def _require_tz(value: datetime) -> datetime:
 # NOT give `X | None` an implicit default the way v1 did — without `default=None`
 # the field is required, and an omitted (not merely null) key raises ValidationError
 # -> BadPayload -> the generic "Couldn't load this card" state. See the same fix
-# already applied to `source_filename` in models/rejections.py.
+# already applied to `filename` in models/rejections.py.
 ApiDateTime = Annotated[datetime, AfterValidator(_require_tz)]
 Grain = Literal["TODAY", "3D", "2W", "3M", "6M", "ALL"]
 GRAINS: tuple[Grain, ...] = get_args(Grain)

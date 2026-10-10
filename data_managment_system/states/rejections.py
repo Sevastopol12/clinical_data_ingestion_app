@@ -15,7 +15,11 @@ from data_managment_system.services.http import (
     get_client,
 )
 from data_managment_system.states.auth import AuthState
-from data_managment_system.utils.builders import build_rejection_rows, mark_row_expired
+from data_managment_system.utils.builders import (
+    build_rejection_download_filename,
+    build_rejection_rows,
+    mark_row_expired,
+)
 from data_managment_system.utils.view_models import RejectionRowVM
 
 
@@ -112,6 +116,14 @@ class RejectionsState(rx.State):
             if self.downloading_id:
                 return
             self.downloading_id = file_id
+            download_filename = next(
+                (
+                    build_rejection_download_filename(row.title, row.file_id)
+                    for row in self.rows
+                    if row.file_id == file_id
+                ),
+                f"rejected_{file_id}.xlsx",
+            )
             session = (await self.get_state(AuthState)).current_session()
         if session is None:
             async with self:
@@ -162,7 +174,9 @@ class RejectionsState(rx.State):
             return
         async with self:
             self.downloading_id = ""
-        yield rx.download(url=rx.Var.create(result.download_url))
+        yield rx.download(
+            url=rx.Var.create(result.download_url), filename=download_filename
+        )
 
     @rx.event
     def clear_session(self) -> None:

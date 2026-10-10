@@ -89,7 +89,7 @@ def _file_icon(kind: Any) -> rx.Component:
             color=rx.cond(
                 is_csv,
                 rx.color("blue", 11),
-                rx.cond(is_xlsx, rx.color("green", 11), rx.color("gray", 11)),
+                rx.cond(is_xlsx, rx.color("tomato", 11), rx.color("gray", 11)),
             ),
         ),
         width="2.5em",
@@ -98,7 +98,7 @@ def _file_icon(kind: Any) -> rx.Component:
         background=rx.cond(
             is_csv,
             rx.color("blue", 3),
-            rx.cond(is_xlsx, rx.color("green", 3), rx.color("gray", 3)),
+            rx.cond(is_xlsx, rx.color("tomato", 3), rx.color("gray", 3)),
         ),
         display="flex",
         align_items="center",
