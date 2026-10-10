@@ -2,50 +2,36 @@
 
 import reflex as rx
 
-from data_managment_system.pages.login.backdrop import login_backdrop
-from data_managment_system.pages.login.components import (
-    CARD_FOOTER_GAP,
-    brand_bar,
-    footer_note,
-    hero_scrim,
-    login_card,
-)
-from data_managment_system.pages.login.instruments import login_instruments
+from data_managment_system.pages.login.backdrop import login_left_panel
+from data_managment_system.pages.login.components import login_right_panel
 from data_managment_system.states.auth import AuthState
-from data_managment_system.theme import PAGE_BACKGROUND
+from data_managment_system.theme import PAGE_BACKGROUND, responsive
 
 
 @rx.page(route="/login", on_load=AuthState.redirect_if_authenticated)
 def index() -> rx.Component:
-    return rx.box(
-        login_backdrop(),
-        login_instruments(),
-        hero_scrim(),
-        brand_bar(),
-        rx.flex(
-            login_card(),
-            footer_note(),
-            direction="column",
-            align="center",
-            justify="center",
-            gap=CARD_FOOTER_GAP,
-            width="100%",
-            max_width="36em",
-            padding_x="1.25em",
-            padding_y="1em",
-            margin_x="auto",
-            flex="1",
-            position="relative",
-            z_index="2",
+    return rx.flex(
+        rx.box(
+            login_left_panel(),
+            # Let the panel's own 45% width participate directly in the row.
+            display=responsive("none", lg="contents"),
         ),
-        display="flex",
-        flex_direction="column",
-        position="relative",
+        rx.box(
+            login_right_panel(),
+            display="flex",
+            align_items="center",
+            justify_content="center",
+            flex="1",
+            min_width="0",
+        ),
+        direction=responsive("column", lg="row"),
+        align="stretch",
+        width="100%",
         min_height="100vh",
         style={"minHeight": "100dvh"},
+        position="relative",
         background=PAGE_BACKGROUND,
         overflow_x="hidden",
-        width="100%",
     )
 
 

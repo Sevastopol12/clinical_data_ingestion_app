@@ -166,6 +166,7 @@ UPLOAD = {
 
 AUTH = {
     "title": "Sign in",
+    "panel_title": "Clinical Data Control System",
     "username_label": "Username",
     "password_label": "Password",
     "sign_in": "Sign in",

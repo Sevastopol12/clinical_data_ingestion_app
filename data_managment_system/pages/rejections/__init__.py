@@ -117,7 +117,7 @@ def _rejection_row(row: Any) -> rx.Component:
                 "available",
                 rx.badge(
                     REJECTIONS["badge_available"],
-                    color_scheme="violet",
+                    color_scheme="jade",
                     variant="soft",
                 ),
             ),

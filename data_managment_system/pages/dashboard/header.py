@@ -84,25 +84,25 @@ def topbar() -> rx.Component:
                 gap="0.6em",
                 align="center",
             ),
-            rx.cond(
-                AuthState.facility_id != "",
-                rx.badge(
-                    rx.hstack(
-                        rx.icon("building-2", size=12),
-                        rx.text(AuthState.facility_id),
-                        gap="0.3em",
-                        align="center",
-                    ),
-                    variant="soft",
-                    font_size=TEXT_SIZE_1,
-                ),
-            ),
             rx.hstack(
                 rx.hstack(
                     _freshness_chip(),
                     rejections_button(),
                     gap="0.5em",
                     align="center",
+                ),
+                rx.cond(
+                    AuthState.facility_id != "",
+                    rx.badge(
+                        rx.hstack(
+                            rx.icon("building-2", size=12),
+                            rx.text(AuthState.facility_id),
+                            gap="0.3em",
+                            align="center",
+                        ),
+                        variant="soft",
+                        font_size=TEXT_SIZE_1,
+                    ),
                 ),
                 _logout_button(),
                 position="relative",
