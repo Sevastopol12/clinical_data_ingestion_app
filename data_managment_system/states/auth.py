@@ -140,6 +140,11 @@ class AuthState(rx.State):
         yield FileInputState.clear_session
         yield rx.redirect("/login")
 
+    @rx.var
+    def facility_id(self) -> str:
+        """Public, read-only mirror of the backend-only facility id for display."""
+        return self._facility_id
+
     def current_session(self) -> SessionInfo | None:
         if not self.is_authenticated:
             return None
