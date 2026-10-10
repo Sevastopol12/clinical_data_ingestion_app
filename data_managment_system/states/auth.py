@@ -1,6 +1,5 @@
 """Backend-owned session state (token lives in backend-only vars)."""
 
-import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -16,8 +15,6 @@ from data_managment_system.services.auth import (
 )
 from data_managment_system.services.http import BadPayload
 from data_managment_system.utils.jwt_claims import extract_sid
-
-logger = logging.getLogger(__name__)
 
 
 class AuthState(rx.State):
@@ -49,27 +46,23 @@ class AuthState(rx.State):
         try:
             dto = await auth_service.login(username, password)
         except InvalidCredentials:
-            logger.info("login failed: %s", type(InvalidCredentials).__name__)
             self.is_logging_in = False
             self.login_error = "invalid"
             self.retry_after = 0
             return None
         except RateLimited as exc:
-            logger.info("login failed: %s", type(exc).__name__)
             self.is_logging_in = False
             self.login_error = "rate_limited"
             self.retry_after = exc.retry_after
             return None
-        except (AuthUnavailable, BadPayload) as exc:
-            logger.warning("login failed: %s", type(exc).__name__)
+        except (AuthUnavailable, BadPayload):
             self.is_logging_in = False
             self.login_error = "unavailable"
             self.retry_after = 0
             return None
         try:
             sid = extract_sid(dto.session_token)
-        except ValueError as exc:
-            logger.warning("login failed: %s", type(exc).__name__)
+        except ValueError:
             self.is_logging_in = False
             self.login_error = "unavailable"
             self.retry_after = 0
@@ -90,8 +83,7 @@ class AuthState(rx.State):
         if token:
             try:
                 await auth_service.logout(token)
-            except AuthUnavailable as exc:
-                logger.warning("logout failed: %s", type(exc).__name__)
+            except AuthUnavailable:
                 yield rx.toast.warning(AUTH["logout_warning"])
         self.is_authenticated = False
         self.is_logging_in = False
@@ -105,9 +97,11 @@ class AuthState(rx.State):
 
             _CACHE.invalidate_namespace(old_sid)
         from data_managment_system.states.metrics import MetricsState
+        from data_managment_system.states.rejections import RejectionsState
         from data_managment_system.states.upload import FileInputState
 
         yield MetricsState.clear_session
+        yield RejectionsState.clear_session
         yield FileInputState.clear_session
         yield rx.redirect("/login")
 
@@ -138,9 +132,11 @@ class AuthState(rx.State):
 
             _CACHE.invalidate_namespace(old_sid)
         from data_managment_system.states.metrics import MetricsState
+        from data_managment_system.states.rejections import RejectionsState
         from data_managment_system.states.upload import FileInputState
 
         yield MetricsState.clear_session
+        yield RejectionsState.clear_session
         yield FileInputState.clear_session
         yield rx.redirect("/login")
 

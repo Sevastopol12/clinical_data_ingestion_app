@@ -44,11 +44,8 @@ CARD_STYLE = {
     "border_radius": "0.875em",
     "padding": "1.25em",
     "box_sizing": "border-box",
-    "transition": "border-color 150ms ease",
-    "_hover": {"border_color": "var(--accent-a7)"},
 }
 LOGIN_BUTTON_MIN_HEIGHT = "2.4em"
-LOGIN_CARD_HOVER = {"border_color": "var(--gray-a5)"}
 DASHBOARD_GAP = "0.75em"
 # Desktop spacing breakpoint -> lg
 SPACING_BREAKPOINT = "lg"
@@ -315,8 +312,6 @@ PANEL_STYLE = {
     "backdrop_filter": "blur(0.75em)",
     "position": "relative",
     "overflow": "hidden",
-    "transition": "border-color 150ms ease",
-    "_hover": {"border_color": "var(--accent-a7)"},
 }
 PANEL_ICON_TILE = {
     "width": "2em",

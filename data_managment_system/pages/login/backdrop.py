@@ -23,8 +23,6 @@ from data_managment_system.theme import (
     LOGIN_GRID_BG,
     LOGIN_GRID_BG_SIZE,
     LOGIN_GRID_MASK,
-    LOGIN_HUD_LINE,
-    LOGIN_HUD_TICK,
     LOGIN_PPG_DATA_URI,
     LOGIN_RADAR_BG,
     LOGIN_RESP_DATA_URI,
@@ -109,41 +107,6 @@ def login_backdrop() -> rx.Component:
         pointer_events="none",
         aria_hidden="true",
         class_name="login-ping",
-    )
-    hud_images = ", ".join([_solid(LOGIN_HUD_LINE)] * 8 + [_solid(LOGIN_HUD_TICK)] * 8)
-    hud_sizes = (
-        "1px 2.5em, 2.5em 1px, 1px 2.5em, 2.5em 1px, "
-        "1px 2.5em, 2.5em 1px, 1px 2.5em, 2.5em 1px, "
-        "0.6em 1px, 1px 0.6em, 0.6em 1px, 1px 0.6em, "
-        "0.6em 1px, 1px 0.6em, 0.6em 1px, 1px 0.6em"
-    )
-    hud_positions = (
-        "1.5em 1.5em, 1.5em 1.5em, "
-        "calc(100% - 1.5em) 1.5em, calc(100% - 4em) 1.5em, "
-        "1.5em calc(100% - 4em), 1.5em calc(100% - 1.5em), "
-        "calc(100% - 1.5em) calc(100% - 4em), "
-        "calc(100% - 4em) calc(100% - 1.5em), "
-        "1.5em 4.5em, 4.5em 1.5em, "
-        "calc(100% - 2.1em) 4.5em, calc(100% - 5.1em) 1.5em, "
-        "1.5em calc(100% - 5.1em), 4.5em calc(100% - 2.1em), "
-        "calc(100% - 2.1em) calc(100% - 5.1em), "
-        "calc(100% - 5.1em) calc(100% - 2.1em)"
-    )
-    hud_layer = rx.box(
-        position="fixed",
-        inset="0",
-        width="100%",
-        height="100%",
-        max_width="100vw",
-        overflow="hidden",
-        background_image=hud_images,
-        background_size=hud_sizes,
-        background_position=hud_positions,
-        background_repeat="no-repeat",
-        display={"initial": "none", "md": "block"},
-        z_index="0",
-        pointer_events="none",
-        aria_hidden="true",
     )
     ruler_images = (
         f"{LOGIN_RULER_MINOR_BG}, {LOGIN_RULER_MAJOR_BG}, "
@@ -340,7 +303,6 @@ def login_backdrop() -> rx.Component:
             glow_layer,
             radar_layer,
             ping_layer,
-            hud_layer,
             ruler_layer,
             timeline_layer,
             ecg_layer,

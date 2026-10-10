@@ -25,60 +25,6 @@ CARD_ICONS = {
 }
 
 
-def _tick(position: str) -> rx.Component:
-    if position == "top-left":
-        return rx.box(
-            class_name="dash-tick",
-            aria_hidden="true",
-            position="absolute",
-            width="0.6em",
-            height="0.6em",
-            top="0.35em",
-            left="0.35em",
-            border_top="1px solid var(--accent-a7)",
-            border_left="1px solid var(--accent-a7)",
-            pointer_events="none",
-        )
-    if position == "top-right":
-        return rx.box(
-            class_name="dash-tick",
-            aria_hidden="true",
-            position="absolute",
-            width="0.6em",
-            height="0.6em",
-            top="0.35em",
-            right="0.35em",
-            border_top="1px solid var(--accent-a7)",
-            border_right="1px solid var(--accent-a7)",
-            pointer_events="none",
-        )
-    if position == "bottom-left":
-        return rx.box(
-            class_name="dash-tick",
-            aria_hidden="true",
-            position="absolute",
-            width="0.6em",
-            height="0.6em",
-            bottom="0.35em",
-            left="0.35em",
-            border_bottom="1px solid var(--accent-a7)",
-            border_left="1px solid var(--accent-a7)",
-            pointer_events="none",
-        )
-    return rx.box(
-        class_name="dash-tick",
-        aria_hidden="true",
-        position="absolute",
-        width="0.6em",
-        height="0.6em",
-        bottom="0.35em",
-        right="0.35em",
-        border_bottom="1px solid var(--accent-a7)",
-        border_right="1px solid var(--accent-a7)",
-        pointer_events="none",
-    )
-
-
 def card_shell(
     title: str,
     card_id: str,
@@ -145,17 +91,11 @@ def card_shell(
         position="relative",
         z_index="1",
     )
-    decorations: list[rx.Component] = []
-    decorations.append(_tick("top-left"))
-    decorations.append(_tick("top-right"))
-    decorations.append(_tick("bottom-left"))
-    decorations.append(_tick("bottom-right"))
     style = dict(PANEL_STYLE)
     return rx.box(
-        *decorations,
         content,
         style=style,
-        class_name="dash-panel dash-rise",
+        class_name="dash-rise",
         display="flex",
         flex_direction="column",
         width="100%",

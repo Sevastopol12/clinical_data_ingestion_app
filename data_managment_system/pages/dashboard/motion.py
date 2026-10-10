@@ -14,8 +14,6 @@ DASHBOARD_MOTION_CSS = """
 .dash-rise-4 { animation: dash-rise 500ms ease both; animation-delay: 320ms; }
 .dash-rise-5 { animation: dash-rise 500ms ease both; animation-delay: 400ms; }
 .dash-rise-6 { animation: dash-rise 500ms ease both; animation-delay: 480ms; }
-.dash-tick { opacity: 0; transition: opacity 200ms ease; }
-.dash-panel:hover .dash-tick { opacity: 1; }
 .dash-shimmer { position: relative; overflow: hidden; }
 .dash-shimmer::after {
     content: "";
@@ -32,7 +30,6 @@ DASHBOARD_MOTION_CSS = """
 @media (prefers-reduced-motion: reduce) {
     .dash-rise, .dash-rise-1, .dash-rise-2, .dash-rise-3,
     .dash-rise-4, .dash-rise-5, .dash-rise-6,
-    .dash-tick,
     .dash-shimmer, .dash-shimmer::after {
         animation: none;
         transition: none;

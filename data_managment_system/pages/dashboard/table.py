@@ -17,7 +17,7 @@ from data_managment_system.theme import (
     responsive,
 )
 
-COLUMN_WIDTHS = ("15%", "29%", "11%", "21%", "24%")
+COLUMN_WIDTHS = ("15%", "29%", "13%", "21%", "22%")
 PATIENT_PAGE_SIZE = 10
 
 MOBILE_CARD_STYLE = {
@@ -29,7 +29,7 @@ MOBILE_CARD_STYLE = {
 }
 
 
-def _badges(row: rx.Var) -> rx.Component:
+def _badges(row: rx.Var, vertical: bool = False) -> rx.Component:
     row_any: Any = row
 
     def badge(item: rx.Var) -> rx.Component:
@@ -41,9 +41,17 @@ def _badges(row: rx.Var) -> rx.Component:
             color_scheme=item_any.tone,
         )
 
+    if vertical:
+        return rx.vstack(
+            rx.foreach(row_any.badges, badge),
+            gap="0.25em",
+            align="start",
+            flex_wrap="nowrap",
+        )
     return rx.hstack(
         rx.foreach(row_any.badges, badge),
         gap="0.25em",
+        align="start",
         flex_wrap="wrap",
     )
 
@@ -118,7 +126,7 @@ def _desktop_row(row: rx.Var) -> rx.Component:
             vertical_align="middle",
         ),
         rx.table.cell(
-            _badges(row),
+            _badges(row, vertical=True),
             padding_y=TABLE_CELL_PADDING_Y,
             vertical_align="middle",
         ),
@@ -232,7 +240,6 @@ def patient_table() -> rx.Component:
             )
         ),
         rx.table.body(rx.foreach(MetricsState.patient_page_rows, _desktop_row)),
-        variant="ghost",
         width="100%",
         style={
             "table_layout": "fixed",

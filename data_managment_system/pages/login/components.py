@@ -9,7 +9,6 @@ from data_managment_system.states.auth import AuthState
 from data_managment_system.states.login_ui import LoginUiState
 from data_managment_system.theme import (
     LOGIN_BUTTON_MIN_HEIGHT,
-    LOGIN_CARD_HOVER,
     TEXT_MUTED,
     TEXT_SIZE_1,
     TEXT_SIZE_2,
@@ -113,7 +112,7 @@ def _password_toggle() -> rx.Component:
     """Show/hide password icon button bound to LoginUiState."""
     show = LoginUiState.show_password
     return rx.icon_button(
-        rx.icon(rx.cond(show, "eye-off", "eye")),
+        rx.icon(rx.cond(show, "eye-off", "eye"), size=15),
         variant="ghost",
         type="button",
         aria_label=rx.cond(show, AUTH["hide_password"], AUTH["show_password"]),
@@ -231,8 +230,6 @@ def login_card() -> rx.Component:
         padding=responsive(CARD_PADDING_MOBILE, sm=CARD_PADDING_DESKTOP),
         width="100%",
         max_width="26em",
-        _focus_within={"border_color": "var(--accent-a8)"},
-        _hover=LOGIN_CARD_HOVER,
         class_name="login-rise login-rise-2",
     )
 

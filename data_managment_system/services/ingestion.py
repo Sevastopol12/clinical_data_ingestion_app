@@ -1,5 +1,4 @@
 import base64
-import logging
 from asyncio import Semaphore, gather
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -21,7 +20,6 @@ from data_managment_system.models import (
 )
 from data_managment_system.services.http import Unauthorized
 
-logger = logging.getLogger(__name__)
 StageCallback = Callable[[str, str], Awaitable[None]]
 
 
@@ -61,18 +59,6 @@ def _status_code(exc: BaseException) -> int | None:
     response = getattr(exc, "response", None)
     status = getattr(response, "status_code", None)
     return status if isinstance(status, int) else None
-
-
-def _log_failure(stage: FailureStage, exc: BaseException, index: int) -> None:
-    logger.warning(
-        "upload stage failed",
-        extra={
-            "stage": stage.value,
-            "exception_type": type(exc).__name__,
-            "status_code": _status_code(exc),
-            "file_index": index,
-        },
-    )
 
 
 async def _submit_one(
@@ -135,7 +121,6 @@ async def _submit_one(
             record.raise_for_status()
             return FileOutcome(job.filename, True, None, ingestion_id)
         except Exception as exc:  # noqa: BLE001
-            _log_failure(stage, exc, index)
             return FileOutcome(
                 job.filename, False, stage, ingestion_id, _status_code(exc)
             )
@@ -194,7 +179,6 @@ async def _fetch_mapping_one(
             result = MappingResponse.model_validate(response.json())
             return result if result.filename == request.filename else None
         except Exception as exc:
-            _log_failure(FailureStage.RECORD, exc, 0)
             if _status_code(exc) == 401:
                 raise Unauthorized("mapping request unauthorized") from exc
             return None

@@ -431,11 +431,6 @@ def upload_panel() -> rx.Component:
                         "transparent",
                         FLOAT_HOVER["border_color"],
                     ),
-                    "box_shadow": rx.cond(
-                        FileInputState.is_submitting | ~FileInputState.has_files,
-                        "none",
-                        FLOAT_HOVER["box_shadow"],
-                    ),
                 },
             ),
             rx.button(

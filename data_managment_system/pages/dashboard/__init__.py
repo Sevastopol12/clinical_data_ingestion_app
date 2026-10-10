@@ -13,6 +13,7 @@ from data_managment_system.pages.dashboard.header import hero, topbar
 from data_managment_system.pages.dashboard.motion import dashboard_motion
 from data_managment_system.pages.dashboard.table import patient_table
 from data_managment_system.pages.gate import gated
+from data_managment_system.pages.rejections import rejections_dialog
 from data_managment_system.pages.upload import upload_dialog, upload_fab
 from data_managment_system.states.auth import AuthState
 from data_managment_system.states.metrics import MetricsState
@@ -135,6 +136,7 @@ def index() -> rx.Component:
             ),
             upload_fab(),
             upload_dialog(),
+            rejections_dialog(),
             padding_top=responsive("0.25em", lg="0em"),
             background=PAGE_GLOW,
             background_attachment="fixed",

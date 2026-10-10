@@ -48,10 +48,7 @@ def _stat(field: rx.Var) -> rx.Component:
             weight="bold",
             font_variant_numeric="tabular-nums",
             padding_bottom="0.2em",
-            background="linear-gradient(180deg, var(--gray-12), var(--gray-9))",
-            background_clip="text",
-            color="transparent",
-            style={"-webkit-background-clip": "text"},
+            color="var(--gray-12)",
         ),
         align="start",
     )

@@ -1,7 +1,6 @@
 """State for the upload dialog and its file mapping workflow."""
 
 import asyncio
-import logging
 from uuid import UUID
 
 import reflex as rx
@@ -29,8 +28,6 @@ from data_managment_system.utils.upload_rules import (
     unique_sources,
     validate_file,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class FileInputState(rx.State):

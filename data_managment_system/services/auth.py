@@ -1,6 +1,5 @@
 """Backend-owned auth service (login/logout only, no Reflex)."""
 
-import logging
 from typing import Any
 
 import httpx
@@ -8,8 +7,6 @@ import httpx
 from data_managment_system.config import settings
 from data_managment_system.models.auth import LoginResponse
 from data_managment_system.services.http import BackendError, BadPayload
-
-logger = logging.getLogger(__name__)
 
 LOGIN_PATH = "/auth/v1/login"
 LOGOUT_PATH = "/auth/v1/logout"
@@ -62,7 +59,6 @@ async def login(username: str, password: str) -> LoginResponse:
                 json={"username": username, "password": password},
             )
     except httpx.RequestError as exc:
-        logger.warning("login failed: %s", type(exc).__name__)
         raise AuthUnavailable("auth unavailable") from exc
 
     if response.status_code in (401, 422):
@@ -71,7 +67,6 @@ async def login(username: str, password: str) -> LoginResponse:
         retry_after = _parse_retry_after(response.headers.get("Retry-After"))
         raise RateLimited(retry_after)
     if not 200 <= response.status_code < 300:
-        logger.warning("login failed with status=%s", response.status_code)
         raise AuthUnavailable("auth unavailable")
 
     try:
@@ -93,12 +88,10 @@ async def logout(access_token: str) -> None:
                 headers={"Authorization": f"Bearer {access_token}"},
             )
     except httpx.RequestError as exc:
-        logger.warning("logout failed: %s", type(exc).__name__)
         raise AuthUnavailable("auth unavailable") from exc
 
     if 200 <= response.status_code < 300:
         return
     if response.status_code == 401:
         return
-    logger.warning("logout failed with status=%s", response.status_code)
     raise AuthUnavailable("auth unavailable")

@@ -13,7 +13,6 @@ def _retry(on_retry: rx.EventHandler | None) -> rx.Component:
     return rx.tooltip(
         rx.icon_button(
             rx.icon("rotate-ccw", size=16),
-            variant="ghost",
             font_size=TEXT_SIZE_1,
             color_scheme="gray",
             aria_label=COMMON["retry"],

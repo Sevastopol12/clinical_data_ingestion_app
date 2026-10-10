@@ -2,6 +2,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from data_managment_system.config import settings
 from data_managment_system.models.metrics import (
     ComorbidityMetric,
     DataQualityMetric,
@@ -11,8 +12,6 @@ from data_managment_system.models.metrics import (
     PeriodSummaryMetric,
 )
 from data_managment_system.services.http import BackendClient, BadPayload
-
-PREFIX = "/metrics/v1"
 
 
 def _parse_list(payload: Any, model: type[Any]) -> list[Any]:
@@ -30,7 +29,7 @@ async def fetch_period_summary(
     params = {"grain": grain}
     rows = _parse_list(
         await client.get_json(
-            f"{PREFIX}/period-summary", params, access_token=access_token
+            settings.request_metric_period_summary, params, access_token=access_token
         ),
         PeriodSummaryMetric,
     )
@@ -43,7 +42,7 @@ async def fetch_comorbidity(
     params = {"grain": grain}
     rows = _parse_list(
         await client.get_json(
-            f"{PREFIX}/comorbidity", params, access_token=access_token
+            settings.request_metric_comorbidity, params, access_token=access_token
         ),
         ComorbidityMetric,
     )
@@ -56,7 +55,7 @@ async def fetch_data_quality(
     params = {"grain": grain}
     rows = _parse_list(
         await client.get_json(
-            f"{PREFIX}/data-quality", params, access_token=access_token
+            settings.request_metric_data_quality, params, access_token=access_token
         ),
         DataQualityMetric,
     )
@@ -68,14 +67,16 @@ async def fetch_out_of_control(
 ) -> list[PatientStateMetric]:
     return _parse_list(
         await client.get_json(
-            f"{PREFIX}/patient-state/out-of-control", access_token=access_token
+            settings.request_metric_patient_state, access_token=access_token
         ),
         PatientStateMetric,
     )
 
 
 async def fetch_status(client: BackendClient, *, access_token: str) -> MetricsStatus:
-    payload = await client.get_json(f"{PREFIX}/status", access_token=access_token)
+    payload = await client.get_json(
+        settings.request_metric_status, access_token=access_token
+    )
     try:
         return MetricsStatus.model_validate(payload)
     except (ValidationError, TypeError, ValueError) as exc:

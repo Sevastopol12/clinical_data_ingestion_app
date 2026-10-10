@@ -1,7 +1,6 @@
 """Dashboard metric state and backend loading events."""
 
 import asyncio
-import logging
 from collections.abc import AsyncIterator, Callable
 from typing import Any, cast, get_args
 
@@ -44,8 +43,6 @@ from data_managment_system.utils.view_models import (
     PatientRowVM,
     RankingCardVM,
 )
-
-logger = logging.getLogger(__name__)
 
 _CACHE = TtlCache(60)
 _PERIOD_BUILDERS: dict[str, Callable[[Any], Any]] = {
@@ -180,8 +177,8 @@ class MetricsState(rx.State):
     ) -> bool:
         await self._set_card_status(card_id, "loading")
         client = get_client()
+        endpoint = _CARD_ENDPOINTS[card_id]
         try:
-            endpoint = _CARD_ENDPOINTS[card_id]
             key = self._cache_key(session.sid, endpoint, grain)
             if endpoint == "period-summary":
                 rows = await _CACHE.get_or_fetch(
@@ -214,12 +211,10 @@ class MetricsState(rx.State):
         except Unavailable:
             await self._set_card_status(card_id, "503")
             return False
-        except (BackendError, BadPayload) as exc:
-            logger.error("metrics card failed: %s", type(exc).__name__)
+        except (BackendError, BadPayload):
             await self._set_card_status(card_id, "error")
             return False
-        except Exception as exc:  # noqa: BLE001
-            logger.error("metrics card failed: %s", type(exc).__name__)
+        except Exception:  # noqa: BLE001
             await self._set_card_status(card_id, "error")
             return False
 
@@ -255,7 +250,10 @@ class MetricsState(rx.State):
             self._last_sid = session.sid
             self._auth_failed = False
             grain = self.grain_by_card[card_id]
-        _CACHE.invalidate(self._cache_key(session.sid, _CARD_ENDPOINTS[card_id], grain))
+        _CACHE.invalidate(
+            self._cache_key(session.sid, _CARD_ENDPOINTS[card_id], grain),
+            disown_in_flight=True,
+        )
         auth_failed = await self._load_card(card_id, cast(Grain, grain), session)
         if auth_failed:
             yield AuthState.handle_unauthorized
@@ -279,13 +277,11 @@ class MetricsState(rx.State):
                 self._auth_failed = True
                 self.patients_status = "error"
             return True
-        except Unavailable as exc:
-            logger.error("patient table failed: %s", type(exc).__name__)
+        except Unavailable:
             async with self:
                 self.patients_status = "503"
             return False
-        except Exception as exc:  # noqa: BLE001
-            logger.error("patient table failed: %s", type(exc).__name__)
+        except Exception:  # noqa: BLE001
             async with self:
                 self.patients_status = "error"
             return False
@@ -312,8 +308,7 @@ class MetricsState(rx.State):
             async with self:
                 self.freshness = freshness
             return True
-        except Exception as exc:  # noqa: BLE001
-            logger.error("freshness failed: %s", type(exc).__name__)
+        except Exception:  # noqa: BLE001
             freshness = build_freshness(None, failed=True)
         async with self:
             self.freshness = freshness
@@ -356,7 +351,7 @@ class MetricsState(rx.State):
                 return
             self._last_sid = session.sid
             self._auth_failed = False
-        _CACHE.invalidate(self._patient_cache_key(session.sid))
+        _CACHE.invalidate(self._patient_cache_key(session.sid), disown_in_flight=True)
         auth_failed = await self._load_patients(session)
         if auth_failed:
             yield AuthState.handle_unauthorized
