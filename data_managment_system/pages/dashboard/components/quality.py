@@ -5,6 +5,7 @@ from typing import Any
 import reflex as rx
 
 from data_managment_system.copy import COMMON, DASHBOARD
+from data_managment_system.states.auth import AuthState
 from data_managment_system.states.metrics import MetricsState
 from data_managment_system.theme import (
     CARD_BODY_GAP,
@@ -219,10 +220,26 @@ def data_quality_card(
         rx.fragment(),
     )
 
+    facility_badge = rx.cond(
+        AuthState.facility_id != "",
+        rx.badge(
+            rx.hstack(
+                rx.icon("building-2", size=12),
+                rx.text(AuthState.facility_id),
+                gap="0.3em",
+                align="center",
+            ),
+            variant="soft",
+            font_size=TEXT_SIZE_1,
+        ),
+        rx.fragment(),
+    )
+
     return card_shell(
         title,
         card_id,
         _card_state(card_id, ready, rx.text(COMMON["no_data"]), on_retry),
         footer_start=footer_toggle,
         icon="shield-check",
+        header_extra=facility_badge,
     )

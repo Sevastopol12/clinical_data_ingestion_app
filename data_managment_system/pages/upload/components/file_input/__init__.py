@@ -52,7 +52,7 @@ def _stage_badge(stage: rx.Var[str]) -> rx.Component:
                             gap="0.25em",
                             align="center",
                         ),
-                        color_scheme="violet",
+                        color_scheme="jade",
                         variant="soft",
                     ),
                 )

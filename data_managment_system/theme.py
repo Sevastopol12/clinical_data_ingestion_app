@@ -46,6 +46,8 @@ CARD_STYLE = {
     "box_sizing": "border-box",
 }
 LOGIN_BUTTON_MIN_HEIGHT = "2.4em"
+# Login card title: TEXT_SIZE_5 (1.25em) scaled by 1.25.
+LOGIN_TITLE_SIZE = "1.5625em"
 DASHBOARD_GAP = "0.75em"
 # Desktop spacing breakpoint -> lg
 SPACING_BREAKPOINT = "lg"
@@ -96,7 +98,7 @@ PERIOD_IDLE_BG = "var(--gray-a3)"
 PERIOD_SELECTED_BG = "var(--accent-a5)"
 FLOAT_SHADOW = "0 0.15em 0.35em rgba(0, 0, 0, 0.18)"
 FLOAT_SHADOW_HOVER = "0 0.2em 0.4em rgba(0, 0, 0, 0.22)"
-FLOAT_SHADOW_SELECTED = "0 0.25em 0.5em rgba(124, 58, 237, 0.28)"
+FLOAT_SHADOW_SELECTED = "0 0.25em 0.5em rgba(33, 150, 95, 0.28)"
 FLOAT_HOVER = {
     "transform": "translateY(-1px)",
     "border_color": "var(--accent-a8)",
@@ -119,7 +121,7 @@ STYLESHEETS = [
 
 THEME = rx.theme(
     appearance="dark",
-    accent_color="violet",
+    accent_color="green",
     has_background=True,
 )
 
@@ -135,13 +137,26 @@ _BLOB_CONFIG = (
 )
 
 PAGE_GLOW = (
-    "radial-gradient(60vw 45vh at 8% 0%, rgba(139, 92, 246, 0.30), transparent 65%), "
-    "radial-gradient(50vw 40vh at 92% 18%, rgba(109, 40, 217, 0.24), transparent 65%), "
-    "radial-gradient(60vw 45vh at 50% 100%, rgba(167, 139, 250, 0.16), transparent 65%), "
+    "radial-gradient(60vw 45vh at 8% 0%, rgba(16, 110, 72, 0.30), transparent 65%), "
+    "radial-gradient(50vw 40vh at 92% 18%, rgba(9, 88, 53, 0.24), transparent 65%), "
+    "radial-gradient(60vw 45vh at 50% 100%, rgba(14, 72, 48, 0.16), transparent 65%), "
     f"{PAGE_BACKGROUND}"
 )
 
 LOGIN_GRID_LINE = "rgba(139, 92, 246, 0.06)"
+LOGIN_CARO_LINE = "rgba(52, 130, 91, 0.30)"
+LOGIN_PANEL_LIGHTS = (
+    "radial-gradient(22em 18em at 0% 0%, rgba(52, 130, 91, 0.14), transparent 72%), "
+    "radial-gradient(22em 18em at 100% 100%, rgba(52, 130, 91, 0.12), transparent 72%)"
+)
+LOGIN_CARO_PATTERN = (
+    "repeating-linear-gradient(to right, rgba(52, 130, 91, 0.12) 0 1.2px, "
+    "transparent 1.2px 0.35em, rgba(52, 130, 91, 0.12) 0.35em 0.47em, "
+    "transparent 0.47em 0.75em, rgba(52, 130, 91, 0.12) 0.75em 0.87em, "
+    "transparent 0.87em 2.5em), "
+    "repeating-linear-gradient(to bottom, rgba(52, 130, 91, 0.08) 0 1.2px, "
+    "transparent 1.2px 0.55em)"
+)
 LOGIN_GRID_SIZE = "3.5em"
 LOGIN_GRID_MASK = (
     "radial-gradient(ellipse 80% 70% at 50% 40%, black 0%, transparent 75%)"
@@ -223,12 +238,12 @@ LOGIN_TIMELINE_MAJOR_BG = (
     f"{LOGIN_RULER_TICK} 1px, transparent 1px, transparent 5em)"
 )
 LOGIN_CROSSHAIR = "rgba(167, 139, 250, 0.25)"
-LOGIN_SWEEP_HEAD = "rgba(196, 181, 253, 0.55)"
+LOGIN_SWEEP_HEAD = "rgba(167, 243, 208, 0.55)"
 LOGIN_SWEEP_BAR = (
-    "linear-gradient(to right, transparent, rgba(167, 139, 250, 0.18), "
-    "rgba(196, 181, 253, 0.28), rgba(167, 139, 250, 0.18), transparent)"
+    "linear-gradient(to right, transparent, rgba(110, 231, 183, 0.18), "
+    "rgba(167, 243, 208, 0.28), rgba(110, 231, 183, 0.18), transparent)"
 )
-LOGIN_SWEEP_GLOW = "0 0 0.4em rgba(196, 181, 253, 0.45)"
+LOGIN_SWEEP_GLOW = "0 0 0.4em rgba(167, 243, 208, 0.45)"
 LOGIN_SWEEP_MASK = (
     "linear-gradient(90deg, transparent, black 20%, black 80%, transparent)"
 )
@@ -258,21 +273,21 @@ def _ecg_data_uri(stroke_stops: str) -> str:
 
 LOGIN_ECG_DATA_URI = _ecg_data_uri(
     "%3Cstop offset='0' stop-color='transparent' stop-opacity='0'/%3E"
-    "%3Cstop offset='0.15' stop-color='rgba(139, 92, 246, 0.5)'/%3E"
-    "%3Cstop offset='0.5' stop-color='rgba(167, 139, 250, 0.5)'/%3E"
-    "%3Cstop offset='0.85' stop-color='rgba(139, 92, 246, 0.5)'/%3E"
+    "%3Cstop offset='0.15' stop-color='rgba(62, 207, 142, 0.5)'/%3E"
+    "%3Cstop offset='0.5' stop-color='rgba(110, 231, 183, 0.5)'/%3E"
+    "%3Cstop offset='0.85' stop-color='rgba(62, 207, 142, 0.5)'/%3E"
     "%3Cstop offset='1' stop-color='transparent' stop-opacity='0'/%3E"
 )
 LOGIN_ECG_BRIGHT_DATA_URI = _ecg_data_uri(
     "%3Cstop offset='0' stop-color='transparent' stop-opacity='0'/%3E"
-    "%3Cstop offset='0.15' stop-color='rgba(139, 92, 246, 0.6)'/%3E"
-    "%3Cstop offset='0.5' stop-color='rgba(167, 139, 250, 0.6)'/%3E"
-    "%3Cstop offset='0.85' stop-color='rgba(139, 92, 246, 0.6)'/%3E"
+    "%3Cstop offset='0.15' stop-color='rgba(62, 207, 142, 0.6)'/%3E"
+    "%3Cstop offset='0.5' stop-color='rgba(110, 231, 183, 0.6)'/%3E"
+    "%3Cstop offset='0.85' stop-color='rgba(62, 207, 142, 0.6)'/%3E"
     "%3Cstop offset='1' stop-color='transparent' stop-opacity='0'/%3E"
 )
 # Dashboard shell tokens (T17). Dim ECG-paper grid, top aurora, hero ECG trace.
-DASH_GRID_MINOR = "rgba(139, 92, 246, 0.04)"
-DASH_GRID_MAJOR = "rgba(139, 92, 246, 0.07)"
+DASH_GRID_MINOR = "rgba(62, 207, 142, 0.04)"
+DASH_GRID_MAJOR = "rgba(62, 207, 142, 0.07)"
 DASH_GRID_MINOR_SIZE = "1em"
 DASH_GRID_MAJOR_SIZE = "5em"
 DASH_GRID_BG = (
@@ -289,16 +304,16 @@ DASH_GRID_BG_SIZE = (
 )
 DASH_GRID_MASK = "radial-gradient(ellipse 90% 65% at 50% 0%, black 0%, transparent 78%)"
 DASH_GLOW = (
-    "radial-gradient(42em 24em at 50% 0%, rgba(139, 92, 246, 0.10), "
+    "radial-gradient(42em 24em at 50% 0%, rgba(62, 207, 142, 0.10), "
     "transparent 70%), "
-    "radial-gradient(30em 18em at 16% 0%, rgba(109, 40, 217, 0.08), "
+    "radial-gradient(30em 18em at 16% 0%, rgba(33, 150, 95, 0.08), "
     "transparent 70%)"
 )
 DASH_ECG_DATA_URI = _ecg_data_uri(
     "%3Cstop offset='0' stop-color='transparent' stop-opacity='0'/%3E"
-    "%3Cstop offset='0.15' stop-color='rgba(139, 92, 246, 0.32)'/%3E"
-    "%3Cstop offset='0.5' stop-color='rgba(167, 139, 250, 0.32)'/%3E"
-    "%3Cstop offset='0.85' stop-color='rgba(139, 92, 246, 0.32)'/%3E"
+    "%3Cstop offset='0.15' stop-color='rgba(62, 207, 142, 0.32)'/%3E"
+    "%3Cstop offset='0.5' stop-color='rgba(110, 231, 183, 0.32)'/%3E"
+    "%3Cstop offset='0.85' stop-color='rgba(62, 207, 142, 0.32)'/%3E"
     "%3Cstop offset='1' stop-color='transparent' stop-opacity='0'/%3E"
 )
 DASH_ECG_MASK = "linear-gradient(to right, transparent 0%, transparent 60%, black 85%)"

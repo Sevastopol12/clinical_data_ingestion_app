@@ -33,6 +33,7 @@ def card_shell(
     footer_start: rx.Component | None = None,
     period_note: str | None = None,
     icon: str = "activity",
+    header_extra: rx.Component | None = None,
 ) -> rx.Component:
     period_label = rx.match(
         MetricsState.grain_by_card[card_id],
@@ -56,6 +57,7 @@ def card_shell(
                 style=PANEL_ICON_TILE,
             ),
             rx.text(title, font_size=TEXT_SIZE_3, weight="bold"),
+            header_extra if header_extra is not None else rx.fragment(),
             gap="0.6em",
             align="center",
             min_width="0",
