@@ -1,6 +1,6 @@
 """Frozen, display-ready shapes used by dashboard components."""
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class _FrozenModel(BaseModel):
@@ -10,16 +10,17 @@ class _FrozenModel(BaseModel):
 class FieldVM(_FrozenModel):
     label: str
     value: str
+    pct: int | None = None
 
 
 class TileVM(_FrozenModel):
     label: str
     value: str
     tone: str
+    width_pct: int = 0
 
 
 class KpiCardVM(_FrozenModel):
-    period_label: str
     fields: list[FieldVM]
     tiles: list[TileVM]
     empty_note: str
@@ -32,20 +33,21 @@ class BarRowVM(_FrozenModel):
 
 
 class RankingCardVM(_FrozenModel):
-    period_label: str
     rows: list[BarRowVM]
 
 
 class IssueRowVM(_FrozenModel):
-    label: str
-    code: str
+    title: str
+    field: str
+    field_hint: str
     count: str
+    width_pct: int
 
 
 class DataQualityVM(_FrozenModel):
-    period_label: str
-    fields: list[FieldVM]
-    issues: list[IssueRowVM]
+    coverage_fields: list[FieldVM] = Field(default_factory=list)
+    row_fields: list[FieldVM] = Field(default_factory=list)
+    issues: list[IssueRowVM] = Field(default_factory=list)
 
 
 class BadgeVM(_FrozenModel):
@@ -63,6 +65,17 @@ class PatientRowVM(_FrozenModel):
     glucose: str
     hba1c: str
     badges: list[BadgeVM]
+
+
+class RejectionRowVM(_FrozenModel):
+    file_id: str
+    title: str
+    kind: str
+    created_label: str
+    expiry_label: str
+    rows_label: str
+    state: str
+    can_download: bool
 
 
 class FreshnessVM(_FrozenModel):

@@ -5,6 +5,14 @@ import reflex as rx
 from data_managment_system.copy import UPLOAD
 from data_managment_system.pages.upload.components import upload_panel
 from data_managment_system.states.upload import FileInputState
+from data_managment_system.theme import (
+    FLOAT_HOVER,
+    FLOAT_SHADOW,
+    FLOAT_TRANSITION,
+    TEXT_SIZE_2,
+    TEXT_SIZE_4,
+    TEXT_SIZE_5,
+)
 
 
 def upload_dialog() -> rx.Component:
@@ -19,7 +27,6 @@ def upload_dialog() -> rx.Component:
                             width="2.75em",
                             height="2.75em",
                             border_radius="0.75em",
-                            background=rx.color("accent", 3),
                             display="flex",
                             align_items="center",
                             justify_content="center",
@@ -27,13 +34,13 @@ def upload_dialog() -> rx.Component:
                         rx.vstack(
                             rx.dialog.title(
                                 UPLOAD["dialog_title"],
-                                size="5",
+                                font_size=TEXT_SIZE_5,
                                 weight="bold",
                                 margin="0",
                             ),
                             rx.dialog.description(
                                 UPLOAD["dialog_description"],
-                                size="2",
+                                font_size=TEXT_SIZE_2,
                                 color=rx.color("gray", 11),
                                 margin="0",
                             ),
@@ -48,8 +55,12 @@ def upload_dialog() -> rx.Component:
                             aria_label=UPLOAD["close_label"],
                             variant="ghost",
                             color_scheme="gray",
-                            size="2",
+                            font_size=TEXT_SIZE_2,
                             _hover={"cursor": "pointer"},
+                            _focus_visible={
+                                "outline": "2px solid var(--accent-8)",
+                                "outline_offset": "1px",
+                            },
                         )
                     ),
                     align="center",
@@ -72,7 +83,11 @@ def upload_dialog() -> rx.Component:
                 flex_direction="column",
             ),
             padding="0",
-            border_radius="1.25em",
+            background="var(--gray-a2)",
+            backdrop_filter="blur(1em)",
+            style={"-webkit-backdrop-filter": "blur(1em)"},
+            border="1px solid var(--gray-a5)",
+            border_radius="1em",
             box_shadow="var(--shadow-6)",
             overflow="hidden",
             display="flex",
@@ -88,16 +103,29 @@ def upload_dialog() -> rx.Component:
 
 def upload_fab() -> rx.Component:
     """Build the fixed dashboard button that opens the upload dialog."""
-    return rx.icon_button(
-        rx.icon("upload"),
+    return rx.button(
+        rx.icon("upload", size=18),
+        UPLOAD["upload"],
+        gap="0.5em",
         aria_label=UPLOAD["fab_label"],
         on_click=FileInputState.open_dialog,
         position="fixed",
         bottom="1.5em",
         right="1.5em",
         radius="full",
+        variant="solid",
+        font_size=TEXT_SIZE_4,
         z_index=10,
-        _hover={"cursor": "pointer"},
+        box_shadow=FLOAT_SHADOW,
+        transition=FLOAT_TRANSITION,
+        _hover={
+            **FLOAT_HOVER,
+            "cursor": "pointer",
+        },
+        _focus_visible={
+            "outline": "2px solid var(--accent-8)",
+            "outline_offset": "1px",
+        },
     )
 
 

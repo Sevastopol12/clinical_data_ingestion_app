@@ -1,16 +1,17 @@
-from uuid import UUID
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     backend_base_url: str
-    supabase_url: str
-    supabase_anon_key: str
     request_upload: str
     request_record: str
     request_column_mapping: str
-    dev_facility_id: UUID = UUID("00000000-0000-0000-0000-000000000000")
+    request_rejection_artifact: str
+    request_metric_period_summary: str
+    request_metric_comorbidity: str
+    request_metric_data_quality: str
+    request_metric_patient_state: str
+    request_metric_status: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

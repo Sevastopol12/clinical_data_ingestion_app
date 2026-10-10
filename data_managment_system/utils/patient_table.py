@@ -12,7 +12,8 @@ from data_managment_system.utils.format import (
 )
 from data_managment_system.utils.view_models import BadgeVM, PatientRowVM
 
-PATIENT_CAP = 500
+PATIENT_PAGE_SIZE = 10
+PATIENT_LIMIT = 2000
 
 
 def _number(value: float) -> str:
@@ -21,8 +22,8 @@ def _number(value: float) -> str:
 
 def _badges(patient: PatientStateMetric) -> list[BadgeVM]:
     badges: list[BadgeVM] = []
-    if patient.is_bp_crisis is True:
-        badges.append(BadgeVM(label=copy.DASHBOARD["badge_crisis"], tone="red"))
+    if patient.is_bp_severe is True:
+        badges.append(BadgeVM(label=copy.DASHBOARD["badge_severe"], tone="red"))
     if patient.is_bp_controlled is False:
         badges.append(
             BadgeVM(label=copy.DASHBOARD["badge_bp_uncontrolled"], tone="orange")
@@ -36,7 +37,7 @@ def _badges(patient: PatientStateMetric) -> list[BadgeVM]:
     return badges
 
 
-def _row(patient: PatientStateMetric) -> PatientRowVM:
+def patient_row(patient: PatientStateMetric) -> PatientRowVM:
     bp = (
         f"{_number(patient.last_systolic)}/{_number(patient.last_diastolic)}"
         if patient.last_systolic is not None and patient.last_diastolic is not None
@@ -55,16 +56,46 @@ def _row(patient: PatientStateMetric) -> PatientRowVM:
     )
 
 
-def build_patient_rows(
+def order_patients(
     patients: Sequence[PatientStateMetric],
-) -> tuple[list[PatientRowVM], int]:
-    ordered = sorted(
+) -> list[PatientStateMetric]:
+    return sorted(
         patients,
         key=lambda patient: (
-            patient.is_bp_crisis is not True,
+            patient.is_bp_severe is not True,
             patient.last_visit_date is None,
             patient.last_visit_date,
+            patient.patient_key,
         ),
     )
-    total = len(ordered)
-    return [_row(patient) for patient in ordered[:PATIENT_CAP]], total
+
+
+def prepare_patients(
+    patients: Sequence[PatientStateMetric],
+) -> tuple[list[PatientStateMetric], int]:
+    ordered = order_patients(patients)
+    return ordered[:PATIENT_LIMIT], len(ordered)
+
+
+def page_count(shown: int) -> int:
+    return max(1, (shown + PATIENT_PAGE_SIZE - 1) // PATIENT_PAGE_SIZE)
+
+
+def clamp_page(page: int, shown: int) -> int:
+    return min(max(0, page), page_count(shown) - 1)
+
+
+def range_label(page: int, shown: int) -> str:
+    if shown == 0:
+        return copy.COMMON["empty_patient_range"]
+    start = page * PATIENT_PAGE_SIZE + 1
+    end = min((page + 1) * PATIENT_PAGE_SIZE, shown)
+    return f"{start}-{end} of {shown}"
+
+
+def page_rows(patients: Sequence[PatientStateMetric], page: int) -> list[PatientRowVM]:
+    page = clamp_page(page, len(patients))
+    start = page * PATIENT_PAGE_SIZE
+    return [
+        patient_row(patient) for patient in patients[start : start + PATIENT_PAGE_SIZE]
+    ]

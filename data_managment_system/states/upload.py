@@ -1,15 +1,14 @@
 """State for the upload dialog and its file mapping workflow."""
 
 import asyncio
-import logging
 from uuid import UUID
 
 import reflex as rx
 
-from data_managment_system.copy import UPLOAD
+from data_managment_system.copy import AUTH, UPLOAD
 from data_managment_system.models import MappingRequest
 from data_managment_system.models.ingestion import MAX_BATCH_FILES, MAX_FILE_BYTES
-from data_managment_system.services.http import default_context
+from data_managment_system.services.http import Unauthorized
 from data_managment_system.services.ingestion import (
     UploadJob,
     fetch_mapping_suggestions,
@@ -22,14 +21,13 @@ from data_managment_system.utils.upload_rules import (
     MappingRowVM,
     admit_files,
     apply_suggestions,
+    count_warnings,
     format_file_size,
     normalize_target,
     to_record_mappings,
     unique_sources,
-    validate_rows,
+    validate_file,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class FileInputState(rx.State):
@@ -211,7 +209,20 @@ class FileInputState(rx.State):
             )
             for file in new_files
         ]
-        suggestions = await fetch_mapping_suggestions(requests)
+        async with self:
+            from data_managment_system.states.auth import AuthState
+
+            session = (await self.get_state(AuthState)).current_session()
+        if session is None:
+            yield rx.toast.warning(AUTH["err_expired"])
+            return
+        try:
+            suggestions = await fetch_mapping_suggestions(requests, session.token)
+        except Unauthorized:
+            from data_managment_system.states.auth import AuthState
+
+            yield AuthState.handle_unauthorized
+            return
         async with self:
             updated = list(self.files)
             for request, suggestion in zip(requests, suggestions):
@@ -235,14 +246,13 @@ class FileInputState(rx.State):
                     if suggestion is not None and suggestion.mapping is not None
                     else file.rows
                 )
-                updated[index] = file.model_copy(
-                    update={"rows": rows, "mapping_pending": False}
-                )
+                validated = validate_file(file.model_copy(update={"rows": rows}))
+                updated[index] = validated.model_copy(update={"mapping_pending": False})
             self.files = updated
 
     @rx.event
     def set_target(self, filename: str, source: str, value: str) -> None:
-        self._update_rows(filename, source, value, "")
+        self._update_rows(filename, source, value)
 
     @rx.event
     def blur_target(self, filename: str, source: str) -> None:
@@ -254,16 +264,12 @@ class FileInputState(rx.State):
             return
         try:
             value = normalize_target(row.target)
-            error = ""
         except ValueError:
             value = row.target
-            error = "empty-normalized"
-        self._update_rows(filename, source, value or "", error)
+        self._update_rows(filename, source, value or "")
         self._validate_file(filename)
 
-    def _update_rows(
-        self, filename: str, source: str, target: str, error: str | None
-    ) -> None:
+    def _update_rows(self, filename: str, source: str, target: str) -> None:
         for index, file in enumerate(self.files):
             if file.filename != filename:
                 continue
@@ -271,22 +277,23 @@ class FileInputState(rx.State):
                 row.model_copy(
                     update={
                         "target": target,
-                        **({"error": error} if error is not None else {}),
+                        "error": "",
+                        "warning": "",
                     }
                 )
                 if row.source == source
                 else row
                 for row in file.rows
             ]
-            self.files[index] = file.model_copy(update={"rows": rows})
+            self.files[index] = file.model_copy(
+                update={"rows": rows, "warning_count": count_warnings(rows)}
+            )
             return
 
     def _validate_file(self, filename: str) -> None:
         for index, file in enumerate(self.files):
             if file.filename == filename:
-                self.files[index] = file.model_copy(
-                    update={"rows": validate_rows(file.rows)}
-                )
+                self.files[index] = validate_file(file)
                 return
 
     @rx.event
@@ -303,6 +310,16 @@ class FileInputState(rx.State):
         self._ingestion_ids.clear()
         self._revisions.clear()
         self.expanded_files = []
+
+    @rx.event
+    def clear_session(self) -> None:
+        self._files.clear()
+        self._ingestion_ids.clear()
+        self._revisions.clear()
+        self.files = []
+        self.expanded_files = []
+        self.dialog_open = False
+        self.is_submitting = False
 
     def _drop_file(self, filename: str) -> None:
         self._files.pop(filename, None)
@@ -326,20 +343,25 @@ class FileInputState(rx.State):
         empty = False
         validation_error = False
         async with self:
+            from data_managment_system.states.auth import AuthState
+
+            session = (await self.get_state(AuthState)).current_session()
             if self.is_submitting:
                 return
-            if not self.files:
-                empty = True
+            if session is None:
                 jobs: list[UploadJob] = []
+            elif not self.files:
+                empty = True
+                jobs = []
             else:
                 self.is_submitting = True
                 validated: list[FileVM] = []
                 for file in self.files:
-                    rows = validate_rows(file.rows)
+                    validated_file = validate_file(file)
                     validation_error = validation_error or any(
-                        row.error for row in rows
+                        row.error for row in validated_file.rows
                     )
-                    validated.append(file.model_copy(update={"rows": rows}))
+                    validated.append(validated_file)
                 self.files = validated
                 self.expanded_files = [
                     *self.expanded_files,
@@ -360,6 +382,9 @@ class FileInputState(rx.State):
                     for file in self.files
                 ]
 
+        if session is None:
+            yield rx.toast.warning(AUTH["err_expired"])
+            return
         if empty:
             yield rx.toast.warning(
                 UPLOAD["toast_rejected"].format(details="no files selected")
@@ -371,7 +396,7 @@ class FileInputState(rx.State):
             yield rx.toast.error(UPLOAD["toast_fix_mapping"])
             return
 
-        outcomes = await submit_batch(jobs, default_context(), self._stage_callback)
+        outcomes = await submit_batch(jobs, session.token, self._stage_callback)
         successes = [outcome for outcome in outcomes if outcome.ok]
         failures = [outcome for outcome in outcomes if not outcome.ok]
         async with self:
@@ -400,6 +425,11 @@ class FileInputState(rx.State):
             yield rx.toast.error(UPLOAD["toast_partial_failure"])
         else:
             yield rx.toast.success(UPLOAD["toast_success"])
+        if failures and any(outcome.status_code == 401 for outcome in failures):
+            from data_managment_system.states.auth import AuthState
+
+            yield AuthState.handle_unauthorized
+            return
         if successes:
             from data_managment_system.states.metrics import MetricsState
 

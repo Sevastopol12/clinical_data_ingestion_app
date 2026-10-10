@@ -1,23 +1,9 @@
-import logging
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping
 from typing import Any
-from uuid import UUID
 
 import httpx
 
 from data_managment_system.config import settings
-
-logging.getLogger("httpx").setLevel(logging.WARNING)
-
-
-@dataclass(frozen=True)
-class AuthContext:
-    access_token: str | None
-    facility_id: UUID
-
-
-ContextProvider = Callable[[], AuthContext]
 
 
 class BackendError(Exception):
@@ -32,6 +18,18 @@ class Forbidden(BackendError):
     """The backend rejected access to the resource."""
 
 
+class NotFound(BackendError):
+    """The requested backend resource does not exist."""
+
+
+class Gone(BackendError):
+    """The requested backend resource has expired."""
+
+
+class InvalidRequest(BackendError):
+    """The backend rejected the request as invalid."""
+
+
 class Unavailable(BackendError):
     """The backend metrics store is unavailable."""
 
@@ -44,11 +42,9 @@ class BackendClient:
     def __init__(
         self,
         base_url: str,
-        context: ContextProvider,
         http: httpx.AsyncClient | None = None,
     ) -> None:
         self._base_url = httpx.URL(base_url)
-        self._context = context
         self._http = http or httpx.AsyncClient(base_url=base_url)
 
     async def get_json(
@@ -56,19 +52,15 @@ class BackendClient:
         path: str,
         params: Mapping[str, str] | None = None,
         *,
-        scope_facility: bool = True,
+        access_token: str,
     ) -> Any:
-        context = self._context()
         request_params = dict(params or {})
-        headers: dict[str, str] = {}
-        if scope_facility:
-            request_params["facility_id"] = str(context.facility_id)
-        if context.access_token is not None:
-            headers["Authorization"] = f"Bearer {context.access_token}"
+        headers = {"Authorization": f"Bearer {access_token}"}
+        request_url = httpx.URL(f"{str(self._base_url).rstrip('/')}/{path.strip('/')}")
 
         try:
             response = await self._http.get(
-                self._base_url.join(path.lstrip("/")),
+                request_url,
                 params=request_params,
                 headers=headers,
             )
@@ -79,6 +71,12 @@ class BackendClient:
             raise Unauthorized("backend request unauthorized")
         if response.status_code == 403:
             raise Forbidden("backend request forbidden")
+        if response.status_code == 404:
+            raise NotFound("backend resource not found")
+        if response.status_code == 410:
+            raise Gone("backend resource expired")
+        if response.status_code == 422:
+            raise InvalidRequest("backend request invalid")
         if response.status_code == 503:
             raise Unavailable("backend unavailable")
         if not 200 <= response.status_code < 300:
@@ -90,15 +88,11 @@ class BackendClient:
             raise BadPayload("backend returned invalid JSON") from exc
 
 
-def default_context() -> AuthContext:
-    return AuthContext(None, settings.dev_facility_id)
-
-
 _client: BackendClient | None = None
 
 
 def get_client() -> BackendClient:
     global _client
     if _client is None:
-        _client = BackendClient(settings.backend_base_url, default_context)
+        _client = BackendClient(settings.backend_base_url)
     return _client

@@ -16,6 +16,7 @@ from .metrics import (
     PatientStateMetric,
     PeriodSummaryMetric,
 )
+from .rejections import RejectedFile, RejectionDownload, RejectionsPage
 
 __all__ = [
     "ApiDateTime",
@@ -32,4 +33,7 @@ __all__ = [
     "MetricsStatus",
     "PatientStateMetric",
     "PeriodSummaryMetric",
+    "RejectedFile",
+    "RejectionDownload",
+    "RejectionsPage",
 ]
