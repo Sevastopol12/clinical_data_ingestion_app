@@ -1,12 +1,9 @@
-import logging
 from collections.abc import Mapping
 from typing import Any
 
 import httpx
 
 from data_managment_system.config import settings
-
-logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 class BackendError(Exception):
@@ -19,6 +16,18 @@ class Unauthorized(BackendError):
 
 class Forbidden(BackendError):
     """The backend rejected access to the resource."""
+
+
+class NotFound(BackendError):
+    """The requested backend resource does not exist."""
+
+
+class Gone(BackendError):
+    """The requested backend resource has expired."""
+
+
+class InvalidRequest(BackendError):
+    """The backend rejected the request as invalid."""
 
 
 class Unavailable(BackendError):
@@ -47,10 +56,11 @@ class BackendClient:
     ) -> Any:
         request_params = dict(params or {})
         headers = {"Authorization": f"Bearer {access_token}"}
+        request_url = httpx.URL(f"{str(self._base_url).rstrip('/')}/{path.strip('/')}")
 
         try:
             response = await self._http.get(
-                self._base_url.join(path.lstrip("/")),
+                request_url,
                 params=request_params,
                 headers=headers,
             )
@@ -61,6 +71,12 @@ class BackendClient:
             raise Unauthorized("backend request unauthorized")
         if response.status_code == 403:
             raise Forbidden("backend request forbidden")
+        if response.status_code == 404:
+            raise NotFound("backend resource not found")
+        if response.status_code == 410:
+            raise Gone("backend resource expired")
+        if response.status_code == 422:
+            raise InvalidRequest("backend request invalid")
         if response.status_code == 503:
             raise Unavailable("backend unavailable")
         if not 200 <= response.status_code < 300:

@@ -67,6 +67,17 @@ class PatientRowVM(_FrozenModel):
     badges: list[BadgeVM]
 
 
+class RejectionRowVM(_FrozenModel):
+    file_id: str
+    title: str
+    kind: str
+    created_label: str
+    expiry_label: str
+    rows_label: str
+    state: str
+    can_download: bool
+
+
 class FreshnessVM(_FrozenModel):
     state: str
     iso: str

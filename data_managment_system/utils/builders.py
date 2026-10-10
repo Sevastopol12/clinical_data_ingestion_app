@@ -9,6 +9,7 @@ from data_managment_system.models.metrics import (
     MetricsStatus,
     PeriodSummaryMetric,
 )
+from data_managment_system.models.rejections import RejectedFile
 from data_managment_system.utils.format import (
     format_count,
     format_datetime_abs,
@@ -24,6 +25,7 @@ from data_managment_system.utils.view_models import (
     IssueRowVM,
     KpiCardVM,
     RankingCardVM,
+    RejectionRowVM,
     TileVM,
 )
 
@@ -296,4 +298,51 @@ def build_freshness(status: MetricsStatus | None, failed: bool) -> FreshnessVM:
         state="ok",
         iso=status.last_computed_at.isoformat(),
         absolute=format_datetime_abs(status.last_computed_at),
+    )
+
+
+def _rejection_rows_label(rejected_row_count: int) -> str:
+    if rejected_row_count == 1:
+        return copy.REJECTIONS["rows_one"]
+    return copy.REJECTIONS["rows_many"].format(count=format_count(rejected_row_count))
+
+
+def _rejection_kind(source_filename: str | None) -> str:
+    """Mirror FileInputState._kind(): the extension, upper-cased.
+
+    Falls back to "" when there's no filename (or no extension) to read
+    from, so the dialog can show a neutral file icon instead of guessing.
+    """
+    if not source_filename or "." not in source_filename:
+        return ""
+    return source_filename.rsplit(".", 1)[-1].upper()
+
+
+def build_rejection_rows(items: Sequence[RejectedFile]) -> list[RejectionRowVM]:
+    """Display-ready rejected-file rows, preserving backend order."""
+    rows: list[RejectionRowVM] = []
+    for item in items:
+        rows.append(
+            RejectionRowVM(
+                file_id=str(item.file_id),
+                title=item.source_filename or copy.REJECTIONS["fallback_title"],
+                kind=_rejection_kind(item.source_filename),
+                created_label=format_datetime_abs(item.artifact_created_at),
+                expiry_label=format_datetime_abs(item.artifact_expires_at),
+                rows_label=_rejection_rows_label(item.rejected_row_count),
+                state=item.state,
+                can_download=item.state == "available",
+            )
+        )
+    return rows
+
+
+def mark_row_expired(row: RejectionRowVM) -> RejectionRowVM:
+    """Return a copy marked expired with downloading disabled."""
+    return row.model_copy(
+        update={
+            "state": "expired",
+            "can_download": False,
+            "expiry_label": copy.REJECTIONS["expired"],
+        }
     )

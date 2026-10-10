@@ -6,6 +6,12 @@ class Settings(BaseSettings):
     request_upload: str
     request_record: str
     request_column_mapping: str
+    request_rejection_artifact: str
+    request_metric_period_summary: str
+    request_metric_comorbidity: str
+    request_metric_data_quality: str
+    request_metric_patient_state: str
+    request_metric_status: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

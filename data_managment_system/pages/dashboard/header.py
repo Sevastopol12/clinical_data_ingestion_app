@@ -3,6 +3,7 @@
 import reflex as rx
 
 from data_managment_system.copy import AUTH, COMMON, DASHBOARD
+from data_managment_system.pages.rejections import rejections_button
 from data_managment_system.states.auth import AuthState
 from data_managment_system.states.metrics import MetricsState
 from data_managment_system.theme import (
@@ -55,7 +56,7 @@ def _logout_button() -> rx.Component:
                 rx.icon("log-out"),
                 width="100%",
                 align="center",
-                justify="center"
+                justify="center",
             ),
             aria_label=AUTH["logout_label"],
             variant="solid",
@@ -84,12 +85,18 @@ def topbar() -> rx.Component:
                 align="center",
             ),
             rx.hstack(
-                _freshness_chip(),
+                rx.hstack(
+                    _freshness_chip(),
+                    rejections_button(),
+                    gap="0.5em",
+                    align="center",
+                ),
                 _logout_button(),
                 position="relative",
-                gap="0.5em",
+                gap="3em",
                 align="center",
                 justify="end",
+                flex_wrap="wrap",
             ),
             justify="between",
             align="center",
@@ -102,7 +109,8 @@ def topbar() -> rx.Component:
         z_index="20",
         width="100%",
         style=TOPBAR_STYLE,
-        padding_x=responsive("1em", md="1.5em", lg=DESKTOP_PAGE_PADDING_X),
+        padding_left=responsive("1em", md="1.5em", lg=DESKTOP_PAGE_PADDING_X),
+        padding_right="1em",
         padding_y="0.6em",
     )
 
@@ -114,7 +122,6 @@ def hero() -> rx.Component:
                 rx.box(
                     background="var(--accent-9)",
                     border_radius="1em",
-                    box_shadow="0 0 0.75em var(--accent-9)",
                     width="0.4em",
                     height="0.4em",
                 ),
@@ -140,12 +147,9 @@ def hero() -> rx.Component:
                 font_size=responsive(TEXT_SIZE_7, lg=TEXT_SIZE_8),
                 letter_spacing="-0.03em",
                 line_height="1.05",
-                # Self-relative em padding so background-clip text never clips descenders.
                 padding_bottom="0.2em",
-                background="linear-gradient(180deg, var(--gray-12), var(--gray-9))",
-                background_clip="text",
-                color="transparent",
-                style={"-webkit-background-clip": "text", "font_weight": "600"},
+                color="var(--gray-12)",
+                style={"font_weight": "600"},
             ),
             direction="column",
             align="start",

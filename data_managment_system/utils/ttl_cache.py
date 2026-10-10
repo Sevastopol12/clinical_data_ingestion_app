@@ -60,11 +60,17 @@ class TtlCache[T]:
             self._evict_oldest()
         return value
 
-    def invalidate(self, key: Hashable | None = None) -> None:
+    def invalidate(
+        self, key: Hashable | None = None, *, disown_in_flight: bool = False
+    ) -> None:
         if key is None:
             self._values.clear()
+            if disown_in_flight:
+                self._in_flight.clear()
             return
         self._values.pop(key, None)
+        if disown_in_flight:
+            self._in_flight.pop(key, None)
 
     def invalidate_namespace(self, ns: str) -> None:
         for key in [
