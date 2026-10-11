@@ -12,7 +12,8 @@ from data_managment_system.theme import (
     DQ_ISSUE_COLUMN_GAP,
     TEXT_MUTED,
     TEXT_SIZE_1,
-    TEXT_SIZE_2,
+    TEXT_SIZE_3,
+    TEXT_SIZE_4,
     TEXT_SIZE_6,
     responsive,
 )
@@ -45,62 +46,53 @@ def _dq_tile(field: rx.Var) -> rx.Component:
 
 def _issue_row(item: rx.Var) -> rx.Component:
     item_any: Any = item
-    return rx.vstack(
+    return rx.hstack(
+        rx.text(
+            item_any.title,
+            font_size=TEXT_SIZE_4,
+            weight="bold",
+            flex="1",
+            min_width="0",
+        ),
         rx.hstack(
-            rx.hstack(
-                rx.text(item_any.title, weight="medium", font_size=TEXT_SIZE_2),
-                rx.cond(
-                    item_any.field != "",
-                    rx.badge(
-                        item_any.field,
-                        variant="soft",
-                        font_size=TEXT_SIZE_1,
-                        radius="large",
-                        title=item_any.field_hint,
-                        font_family=rx.cond(
-                            item_any.field == item_any.field_hint,
-                            "monospace",
-                            "inherit",
-                        ),
-                    ),
-                    rx.fragment(),
-                ),
-                align="start",
-                wrap="wrap",
-                gap="0.4em",
-                min_width="0",
-                flex="1",
-            ),
-            rx.text(
+            rx.badge(
                 item_any.count,
-                weight="bold",
-                font_variant_numeric="tabular-nums",
-                flex_shrink="0",
+                color_scheme="gray",
+                variant="soft",
+                font_size=TEXT_SIZE_3,
             ),
-            justify="between",
-            align="start",
-            width="100%",
-            column_gap="1em",
-        ),
-        rx.box(
-            rx.box(
-                width=item_any.width_pct.to_string() + "%",
-                height="100%",
-                background="var(--accent-9)",
-                border_radius="999em",
+            rx.cond(
+                (item_any.field != "")
+                & (item_any.field != "text")
+                & (item_any.field != "Text"),
+                rx.badge(
+                    item_any.field,
+                    variant="soft",
+                    font_size=TEXT_SIZE_3,
+                    radius="large",
+                    title=item_any.field_hint,
+                    font_family=rx.cond(
+                        item_any.field == item_any.field_hint,
+                        "monospace",
+                        "inherit",
+                    ),
+                ),
+                rx.fragment(),
             ),
-            width="100%",
-            height="0.3em",
-            background="var(--gray-a4)",
-            border_radius="999em",
-            pointer_events="none",
-            aria_hidden="true",
+            align="center",
+            wrap="wrap",
+            gap="0.4em",
         ),
-        align="stretch",
-        gap="0.35em",
-        border_bottom="1px solid var(--gray-a4)",
-        padding_bottom="0.6em",
+        align="center",
+        justify="between",
+        gap="0.75em",
+        background="var(--gray-a2)",
+        border="1px solid var(--gray-a4)",
+        border_radius="0.6em",
+        padding="0.75em",
         width="100%",
+        flex_wrap="wrap",
+        box_sizing="border-box",
     )
 
 
