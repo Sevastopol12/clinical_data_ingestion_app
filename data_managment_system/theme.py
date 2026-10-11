@@ -46,6 +46,10 @@ CARD_STYLE = {
     "box_sizing": "border-box",
 }
 LOGIN_BUTTON_MIN_HEIGHT = "2.4em"
+# Login submit overlay, centered within the sign-in card.
+LOGIN_LOADING_OVERLAY_BACKGROUND = "#000"
+LOGIN_LOADING_OVERLAY_SIZE = "6em"
+LOGIN_LOADING_OVERLAY_RADIUS = "0.75em"
 # Login card title: TEXT_SIZE_5 (1.25em) scaled by 1.25.
 LOGIN_TITLE_SIZE = "1.5625em"
 DASHBOARD_GAP = "0.75em"
@@ -107,6 +111,52 @@ FLOAT_HOVER = {
 FLOAT_TRANSITION = (
     "transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease"
 )
+UPLOAD_DROP_CSS = """
+@property --upload-border-angle {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+@keyframes upload-border-spin {
+    to { --upload-border-angle: 360deg; }
+}
+.upload-dropzone {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+.upload-dropzone > :not(style) {
+    position: relative;
+    z-index: 1;
+}
+.upload-dropzone::before {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 55%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(ellipse at 50% 100%, var(--accent-a5), transparent 72%);
+    transition: opacity 275ms ease;
+}
+.upload-dropzone:hover {
+    border: 4px solid transparent;
+    background-image: linear-gradient(var(--gray-a2), var(--gray-a2)) padding-box,
+        repeating-conic-gradient(from var(--upload-border-angle), var(--accent-9) 0 12deg, transparent 12deg 30deg) border-box;
+    animation: upload-border-spin 1.6s linear infinite;
+}
+.upload-dropzone:hover::before { opacity: 1; }
+.upload-dropzone[class*="-drag-active"]::before { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .upload-dropzone:hover,
+    .upload-dropzone[class*="-drag-active"] {
+        animation: none;
+        border: 4px solid var(--accent-9);
+        background-image: none;
+    }
+}
+"""
 DASHBOARD_CARD_STYLE = {**CARD_STYLE, "padding": CARD_PADDING_COMPACT}
 SURFACE_ROW_STYLE = {
     "background": "var(--gray-a2)",
@@ -416,6 +466,19 @@ LOGIN_CSS = """
         opacity: 1;
     }
     .login-sweep { display: none; }
+}
+"""
+
+# The login card spinner is a static accent ring when reduced motion is enabled.
+LOGIN_LOADING_SPINNER_CSS = """
+@keyframes login-loading-spin {
+    to { transform: rotate(360deg); }
+}
+.login-loading-spinner {
+    animation: login-loading-spin 800ms linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .login-loading-spinner { animation: none; }
 }
 """
 

@@ -30,7 +30,7 @@ class AuthState(rx.State):
     _facility_id: str = ""
 
     @rx.event
-    async def login(self, form_data: dict) -> Any:
+    async def login(self, form_data: dict) -> AsyncIterator[Any]:
         username = form_data.get("username", "")
         password = form_data.get("password", "")
         username = str(username).strip() if username is not None else ""
@@ -39,34 +39,35 @@ class AuthState(rx.State):
             self.is_logging_in = False
             self.login_error = "invalid"
             self.retry_after = 0
-            return None
+            return
         self.is_logging_in = True
         self.login_error = ""
         self.retry_after = 0
+        yield
         try:
             dto = await auth_service.login(username, password)
         except InvalidCredentials:
             self.is_logging_in = False
             self.login_error = "invalid"
             self.retry_after = 0
-            return None
+            return
         except RateLimited as exc:
             self.is_logging_in = False
             self.login_error = "rate_limited"
             self.retry_after = exc.retry_after
-            return None
+            return
         except (AuthUnavailable, BadPayload):
             self.is_logging_in = False
             self.login_error = "unavailable"
             self.retry_after = 0
-            return None
+            return
         try:
             sid = extract_sid(dto.session_token)
         except ValueError:
             self.is_logging_in = False
             self.login_error = "unavailable"
             self.retry_after = 0
-            return None
+            return
         self._access_token = dto.session_token
         self._sid = sid
         self._facility_id = str(dto.facility_id)
@@ -74,7 +75,8 @@ class AuthState(rx.State):
         self.is_logging_in = False
         self.login_error = ""
         self.retry_after = 0
-        return rx.redirect("/")
+        yield rx.redirect("/")
+        return
 
     @rx.event
     async def logout(self) -> AsyncIterator[Any]:

@@ -3,7 +3,10 @@
 import reflex as rx
 
 from data_managment_system.pages.login.backdrop import login_left_panel
-from data_managment_system.pages.login.components import login_right_panel
+from data_managment_system.pages.login.components import (
+    login_loading_overlay,
+    login_right_panel,
+)
 from data_managment_system.states.auth import AuthState
 from data_managment_system.theme import PAGE_BACKGROUND, responsive
 
@@ -24,6 +27,7 @@ def index() -> rx.Component:
             flex="1",
             min_width="0",
         ),
+        login_loading_overlay(),
         direction=responsive("column", lg="row"),
         align="stretch",
         width="100%",

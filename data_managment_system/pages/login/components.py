@@ -9,6 +9,10 @@ from data_managment_system.states.auth import AuthState
 from data_managment_system.states.login_ui import LoginUiState
 from data_managment_system.theme import (
     LOGIN_BUTTON_MIN_HEIGHT,
+    LOGIN_LOADING_OVERLAY_BACKGROUND,
+    LOGIN_LOADING_OVERLAY_RADIUS,
+    LOGIN_LOADING_OVERLAY_SIZE,
+    LOGIN_LOADING_SPINNER_CSS,
     LOGIN_TITLE_SIZE,
     TEXT_MUTED,
     TEXT_SIZE_1,
@@ -111,7 +115,7 @@ def submit_button() -> rx.Component:
     return rx.button(
         rx.cond(
             AuthState.is_logging_in,
-            rx.fragment(rx.spinner(), rx.text(AUTH["signing_in"])),
+            rx.text(AUTH["signing_in"]),
             rx.text(AUTH["sign_in"]),
         ),
         type="submit",
@@ -126,6 +130,40 @@ def submit_button() -> rx.Component:
         box_shadow="0 0 2em var(--accent-a5)",
         transition="box-shadow 150ms ease, transform 150ms ease",
         _hover={"cursor": "pointer", "box_shadow": "0 0 3em var(--accent-a7)"},
+    )
+
+
+def login_loading_overlay() -> rx.Component:
+    """Show the login spinner at the viewport center while authentication runs."""
+    return rx.cond(
+        AuthState.is_logging_in,
+        rx.box(
+            rx.el.style(LOGIN_LOADING_SPINNER_CSS),
+            rx.box(
+                width="3em",
+                height="3em",
+                border="4px solid var(--accent-a5)",
+                border_top_color="var(--accent-9)",
+                border_radius="50%",
+                class_name="login-loading-spinner",
+            ),
+            position="fixed",
+            top="50%",
+            left="50%",
+            transform="translate(-50%, -50%)",
+            z_index="1000",
+            width=LOGIN_LOADING_OVERLAY_SIZE,
+            height=LOGIN_LOADING_OVERLAY_SIZE,
+            display="flex",
+            align_items="center",
+            justify_content="center",
+            background=LOGIN_LOADING_OVERLAY_BACKGROUND,
+            border_radius=LOGIN_LOADING_OVERLAY_RADIUS,
+            box_shadow="0 0 2em var(--accent-a7)",
+            pointer_events="none",
+            aria_hidden="true",
+        ),
+        rx.fragment(),
     )
 
 
@@ -176,6 +214,7 @@ def login_card() -> rx.Component:
         width="100%",
         max_width="26em",
         padding=responsive(CARD_PADDING_MOBILE, sm=CARD_PADDING_DESKTOP),
+        position="relative",
         class_name="login-rise login-rise-2",
     )
 
@@ -240,6 +279,7 @@ __all__ = [
     "field",
     "footer_note",
     "login_card",
+    "login_loading_overlay",
     "login_right_panel",
     "submit_button",
 ]
