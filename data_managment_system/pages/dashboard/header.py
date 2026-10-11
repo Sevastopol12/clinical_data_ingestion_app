@@ -38,7 +38,9 @@ def _freshness_chip() -> rx.Component:
     )
     return rx.tooltip(
         rx.badge(
-            rx.hstack(rx.icon("refresh-cw", size=14), chip, gap="0.25em"),
+            rx.hstack(
+                rx.icon("refresh-cw", size=14), chip, gap="0.25em", align="center"
+            ),
             variant="surface",
             font_size=TEXT_SIZE_1,
             _hover={"cursor": "pointer"},
