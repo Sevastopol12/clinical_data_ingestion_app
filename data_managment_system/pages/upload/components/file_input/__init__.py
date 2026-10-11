@@ -19,18 +19,54 @@ from data_managment_system.theme import (
     TEXT_SIZE_2,
     TEXT_SIZE_3,
     TEXT_SIZE_4,
+    UPLOAD_DROP_CSS,
     responsive,
 )
 
 UPLOAD_ID = "upload_files"
 
 
-def _stage_text(stage: str) -> str:
-    return {
-        "presigning": UPLOAD["stage_presigning"],
-        "uploading": UPLOAD["stage_uploading"],
-        "recording": UPLOAD["stage_recording"],
-    }[stage]
+def _progress_row(stage: rx.Var[str]) -> rx.Component:
+    width = cast(
+        Any,
+        rx.match(
+            stage,
+            ("presigning", "33%"),
+            ("uploading", "66%"),
+            ("recording", "100%"),
+            "0%",
+        ),
+    )
+    label = cast(
+        Any,
+        rx.match(
+            stage,
+            ("presigning", UPLOAD["stage_presigning"]),
+            ("uploading", UPLOAD["stage_uploading"]),
+            ("recording", UPLOAD["stage_recording"]),
+            "",
+        ),
+    )
+    return rx.vstack(
+        rx.text(label, font_size=TEXT_SIZE_1, color=rx.color("gray", 11)),
+        rx.box(
+            rx.box(
+                width=width,
+                height="100%",
+                background="var(--accent-9)",
+                border_radius="inherit",
+                transition="width 300ms ease",
+            ),
+            width="100%",
+            height="0.3em",
+            overflow="hidden",
+            border_radius="1em",
+            background="var(--gray-a5)",
+            background_image="linear-gradient(to right, transparent 32.7%, var(--gray-a2) 32.7%, var(--gray-a2) 33.3%, transparent 33.3%, transparent 66%, var(--gray-a2) 66%, var(--gray-a2) 66.6%, transparent 66.6%)",
+        ),
+        width="100%",
+        gap="0.25em",
+    )
 
 
 def _stage_badge(stage: rx.Var[str]) -> rx.Component:
@@ -45,16 +81,7 @@ def _stage_badge(stage: rx.Var[str]) -> rx.Component:
             *[
                 (
                     active_stage,
-                    rx.badge(
-                        rx.hstack(
-                            rx.spinner(size="1"),
-                            _stage_text(active_stage),
-                            gap="0.25em",
-                            align="center",
-                        ),
-                        color_scheme="jade",
-                        variant="soft",
-                    ),
+                    rx.fragment(),
                 )
                 for active_stage in ("presigning", "uploading", "recording")
             ],
@@ -208,6 +235,7 @@ def _mapping_block(file_any: Any) -> rx.Component:
         border_radius="0.75em",
         padding="0.75em",
         width="100%",
+        on_click=rx.stop_propagation,
     )
 
 
@@ -257,6 +285,13 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
                     ),
                     gap="0.5em",
                 ),
+                rx.cond(
+                    (file_any.stage == "presigning")
+                    | (file_any.stage == "uploading")
+                    | (file_any.stage == "recording"),
+                    _progress_row(file_any.stage),
+                    rx.fragment(),
+                ),
                 align="start",
                 min_width="0",
                 flex="1",
@@ -274,7 +309,6 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
                 ),
                 variant="ghost",
                 color_scheme="gray",
-                on_click=FileInputState.toggle_mapping(file_any.filename),
                 _hover={"cursor": "pointer"},
             ),
             rx.icon_button(
@@ -283,7 +317,7 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
                 variant="ghost",
                 color_scheme="gray",
                 disabled=FileInputState.is_submitting,
-                on_click=FileInputState.remove_file(file_any.filename),
+                on_click=FileInputState.remove_file(file_any.filename).stop_propagation,
                 _hover={"cursor": "pointer", "color": rx.color("red", 11)},
             ),
             align="center",
@@ -334,6 +368,8 @@ def _file_card(file: rx.Var[Any]) -> rx.Component:
         display="flex",
         flex_direction="column",
         gap="1em",
+        on_click=FileInputState.toggle_mapping(file_any.filename),
+        _hover={"cursor": "pointer"},
     )
 
 
@@ -367,6 +403,7 @@ def upload_panel() -> rx.Component:
         width="100%",
     )
     upload = rx.upload(
+        rx.el.style(UPLOAD_DROP_CSS),
         rx.cond(FileInputState.has_files, drop_content, drop_content),
         multiple=True,
         id=UPLOAD_ID,
@@ -385,7 +422,17 @@ def upload_panel() -> rx.Component:
         border_radius="1em",
         background="var(--gray-a2)",
         box_shadow="none",
-        transition=FLOAT_TRANSITION,
+        transition="transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease",
+        class_name="upload-dropzone",
+        drag_active_style=rx.Style(
+            {
+                "border": "4px solid transparent",
+                "background_image": "linear-gradient(var(--gray-a2), var(--gray-a2)) padding-box, repeating-conic-gradient(from var(--upload-border-angle), var(--accent-9) 0 12deg, transparent 12deg 30deg) border-box",
+                "animation": "upload-border-spin 1.6s linear infinite",
+                "box_shadow": "0 0 1.5em var(--accent-a4)",
+                "transform": "scale(1.02)",
+            }
+        ),
         _hover={
             **FLOAT_HOVER,
             "cursor": "pointer",
