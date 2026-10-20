@@ -1,10 +1,11 @@
 from .ingestion import (
+    CompleteUploadCreate,
+    CompleteUploadResponse,
     FileStatus,
-    IngestionComplete,
-    IngestionCreate,
-    IngestionResponse,
     MappingRequest,
     MappingResponse,
+    RequestPresignedCreate,
+    RequestPresignedResponse,
 )
 from .metrics import (
     ApiDateTime,
@@ -21,12 +22,11 @@ from .rejections import RejectedFile, RejectionDownload, RejectionsPage
 __all__ = [
     "ApiDateTime",
     "ComorbidityMetric",
+    "CompleteUploadCreate",
+    "CompleteUploadResponse",
     "DataQualityMetric",
     "FileStatus",
     "Grain",
-    "IngestionComplete",
-    "IngestionCreate",
-    "IngestionResponse",
     "IssueCodeCount",
     "MappingRequest",
     "MappingResponse",
@@ -36,4 +36,6 @@ __all__ = [
     "RejectedFile",
     "RejectionDownload",
     "RejectionsPage",
+    "RequestPresignedCreate",
+    "RequestPresignedResponse",
 ]

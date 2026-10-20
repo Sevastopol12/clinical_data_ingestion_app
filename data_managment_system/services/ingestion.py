@@ -3,7 +3,7 @@ from asyncio import Semaphore, gather
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from enum import StrEnum
-from hashlib import sha3_256
+from hashlib import sha256
 from urllib.parse import quote
 from uuid import UUID
 
@@ -11,12 +11,11 @@ import httpx
 
 from data_managment_system.config import settings
 from data_managment_system.models import (
-    FileStatus,
-    IngestionComplete,
-    IngestionCreate,
-    IngestionResponse,
+    CompleteUploadCreate,
     MappingRequest,
     MappingResponse,
+    RequestPresignedCreate,
+    RequestPresignedResponse,
 )
 from data_managment_system.services.http import Unauthorized
 
@@ -36,6 +35,8 @@ class UploadJob:
     mappings: dict[str, str | None]
     ingestion_id: UUID | None = None
 
+    object_key: str | None = None
+
 
 @dataclass(frozen=True)
 class FileOutcome:
@@ -47,8 +48,8 @@ class FileOutcome:
 
 
 def hash_content(raw_bytes: bytes) -> str:
-    encoded = base64.urlsafe_b64encode(raw_bytes).decode("utf-8")
-    return sha3_256(encoded.encode("utf-8")).hexdigest()
+    digest = sha256(raw_bytes).digest()
+    return base64.b64encode(digest).decode("ascii")
 
 
 def _headers(access_token: str) -> dict[str, str]:
@@ -77,10 +78,12 @@ async def _submit_one(
         try:
             if ingestion_id is None:
                 await on_stage(job.filename, "presigning")
-                create = IngestionCreate(
-                    filename=job.filename,
-                    content=job.content,
+                base64_hashed_digest = hash_content(job.content)
+
+                create = RequestPresignedCreate(
+                    filename=job.filename, base64_hashed_digest=base64_hashed_digest
                 )
+
                 response = await client.post(
                     settings.request_upload,
                     json=create.model_dump(mode="json"),
@@ -88,27 +91,30 @@ async def _submit_one(
                     timeout=30,
                 )
                 response.raise_for_status()
-                presign = IngestionResponse.model_validate(response.json())
-                if (
-                    presign.status is not FileStatus.CREATED
-                    or not presign.presigned_url
-                ):
-                    raise ValueError("invalid presign response")
-                ingestion_id = presign.id
+
+                presign = RequestPresignedResponse.model_validate(response.json())
+                ingestion_id = presign.file_id
+                presigned_url = presign.presigned_url
+
                 stage = FailureStage.STORAGE
                 await on_stage(job.filename, "uploading")
                 storage = await client.put(
-                    presign.presigned_url,
+                    presigned_url,
                     content=job.content,
-                    headers={"Content-Type": create.content_type},
+                    headers={
+                        "x-amz-checksum-sha256": base64_hashed_digest,
+                        "Content-Type": create.content_type,
+                    },
                     timeout=120,
                 )
                 storage.raise_for_status()
+
             stage = FailureStage.RECORD
+
             await on_stage(job.filename, "recording")
-            complete = IngestionComplete(
-                id=ingestion_id,
-                content_hash=hash_content(job.content),
+            complete = CompleteUploadCreate(
+                file_id=ingestion_id,
+                filename=job.filename,
                 size_bytes=len(job.content),
                 mappings=job.mappings,
             )

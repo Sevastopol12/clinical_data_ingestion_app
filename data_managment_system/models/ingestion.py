@@ -1,9 +1,10 @@
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import BaseModel, computed_field, field_validator
 
 from data_managment_system.models.metrics import ApiDateTime
 
@@ -13,6 +14,14 @@ SUPPORTED_FORMATS: dict[str, str] = {
     "csv": "text/csv",
     "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
+VIETNAM_TZ_NAME = "Asia/Ho_Chi_Minh"
+VIETNAM_TZ = ZoneInfo(VIETNAM_TZ_NAME)
+
+
+def now_vietnam() -> datetime:
+    """Return the current aware Vietnam-local datetime."""
+
+    return datetime.now(VIETNAM_TZ)
 
 
 class FileStatus(str, Enum):
@@ -24,9 +33,9 @@ class FileStatus(str, Enum):
     REJECTED = "REJECTED"
 
 
-class IngestionCreate(BaseModel):
+class RequestPresignedCreate(BaseModel):
     filename: str
-    content: bytes | None = Field(default=None, exclude=True)
+    base64_hashed_digest: str
 
     @field_validator("filename")
     @classmethod
@@ -45,27 +54,40 @@ class IngestionCreate(BaseModel):
         return SUPPORTED_FORMATS[Path(self.filename).suffix.lstrip(".").lower()]
 
 
-class IngestionComplete(BaseModel):
-    id: UUID
-    content_hash: str
-    size_bytes: int | None = None
-    mappings: dict[str, Any] | None = None
+class CompleteUploadCreate(BaseModel):
+    file_id: UUID
+    filename: str
+    size_bytes: int
+    mappings: dict[str, str | None]
+
+    @computed_field
+    @property
+    def created_at(self) -> str:
+        return f"{now_vietnam():%Y_%m_%d}"
+
+    @computed_field
+    @property
+    def object_key(self) -> str:
+        return f"{self.file_id}/{self.filename}"
+
+    @computed_field
+    @property
+    def content_type(self) -> str:
+        return SUPPORTED_FORMATS[Path(self.filename).suffix.lstrip(".").lower()]
 
 
-class IngestionResponse(BaseModel):
-    id: UUID
-    facility_id: UUID
+class RequestPresignedResponse(BaseModel):
+    file_id: UUID
+    presigned_url: str
+
+
+class CompleteUploadResponse(BaseModel):
+    file_id: UUID
     filename: str | None = None
     object_key: str
     status: FileStatus
-
-    presigned_url: str | None = None
-
     error_code: str | None = None
     error_message: str | None = None
-    accepted_row_count: int = 0
-    rejected_row_count: int = 0
-
     created_at: ApiDateTime
 
 
