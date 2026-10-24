@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     request_metric_data_quality: str
     request_metric_patient_state: str
     request_metric_status: str
+    login_path: str
+    logout_path: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

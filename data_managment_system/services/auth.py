@@ -8,8 +8,6 @@ from data_managment_system.config import settings
 from data_managment_system.models.auth import LoginResponse
 from data_managment_system.services.http import BackendError, BadPayload
 
-LOGIN_PATH = "/auth/v1/login"
-LOGOUT_PATH = "/auth/v1/logout"
 _TIMEOUT_SECONDS = 15.0
 _DEFAULT_RETRY_AFTER = 60
 
@@ -35,11 +33,11 @@ def _base_url() -> httpx.URL:
 
 
 def _login_url() -> httpx.URL:
-    return _base_url().join(LOGIN_PATH.lstrip("/"))
+    return _base_url().join(settings.login_path.lstrip("/"))
 
 
 def _logout_url() -> httpx.URL:
-    return _base_url().join(LOGOUT_PATH.lstrip("/"))
+    return _base_url().join(settings.logout_path.lstrip("/"))
 
 
 def _parse_retry_after(value: Any) -> int:
