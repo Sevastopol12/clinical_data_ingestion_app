@@ -7,7 +7,7 @@ config = rx.Config(
         rx.plugins.TailwindV4Plugin(),
         rx.plugins.RadixThemesPlugin(
             theme=rx.theme(
-                accent_color="violet",
+                accent_color="green",
                 appearance="dark",
                 has_background=True,
             ),
