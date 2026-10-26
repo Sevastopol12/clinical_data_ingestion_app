@@ -5,7 +5,7 @@ from typing import Any
 import httpx
 
 from data_managment_system.config import settings
-from data_managment_system.models.auth import LoginResponse
+from data_managment_system.models.auth import LoginResponse, RefreshResponse
 from data_managment_system.services.http import BackendError, BadPayload
 
 _TIMEOUT_SECONDS = 15.0
@@ -14,6 +14,10 @@ _DEFAULT_RETRY_AFTER = 60
 
 class InvalidCredentials(BackendError):
     """Username/password rejected (401) or rejected payload (422)."""
+
+
+class InvalidRefresh(BackendError):
+    """Refresh token rejected or expired."""
 
 
 class RateLimited(BackendError):
@@ -38,6 +42,10 @@ def _login_url() -> httpx.URL:
 
 def _logout_url() -> httpx.URL:
     return _base_url().join(settings.logout_path.lstrip("/"))
+
+
+def _refresh_url() -> httpx.URL:
+    return _base_url().join(settings.request_refresh.lstrip("/"))
 
 
 def _parse_retry_after(value: Any) -> int:
@@ -93,3 +101,24 @@ async def logout(access_token: str) -> None:
     if response.status_code == 401:
         return
     raise AuthUnavailable("auth unavailable")
+
+
+async def refresh(refresh_token: str) -> RefreshResponse:
+    """Rotate credentials using the backend HTTP recovery endpoint."""
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT_SECONDS) as client:
+            response = await client.post(
+                _refresh_url(), json={"refresh_token": refresh_token}
+            )
+    except httpx.RequestError as exc:
+        raise AuthUnavailable("auth unavailable") from exc
+    if response.status_code == 401:
+        raise InvalidRefresh("refresh rejected")
+    if response.status_code == 429:
+        raise RateLimited(_parse_retry_after(response.headers.get("Retry-After")))
+    if not 200 <= response.status_code < 300:
+        raise AuthUnavailable("auth unavailable")
+    try:
+        return RefreshResponse.model_validate(response.json())
+    except Exception as exc:
+        raise BadPayload("invalid refresh payload") from exc

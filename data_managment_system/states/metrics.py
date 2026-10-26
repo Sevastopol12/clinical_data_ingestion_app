@@ -45,6 +45,16 @@ from data_managment_system.utils.view_models import (
 )
 
 _CACHE = TtlCache(60)
+# Completion signals used by the realtime loop to coalesce silent reloads. They
+# are process-local hints only; a missing signal must never break a reload.
+_reload_events: dict[str, asyncio.Event] = {}
+
+
+def reload_event(client_token: str) -> asyncio.Event:
+    """Return the completion event for this tab's dashboard reloads."""
+    return _reload_events.setdefault(client_token, asyncio.Event())
+
+
 _PERIOD_BUILDERS: dict[str, Callable[[Any], Any]] = {
     "visits": build_visits,
     "patient_mix": build_patient_mix,
@@ -167,15 +177,32 @@ class MetricsState(rx.State):
         async with self:
             self.card_status = {**self.card_status, card_id: status}
 
-    async def _mark_unauthorized_card(self, card_id: str) -> None:
+    async def _mark_unauthorized_card(
+        self, card_id: str, *, silent: bool = False
+    ) -> None:
         async with self:
             self._auth_failed = True
-            self.card_status = {**self.card_status, card_id: "error"}
+            if not silent:
+                self.card_status = {**self.card_status, card_id: "error"}
+
+    async def _mark_card_failure(
+        self, card_id: str, status: str, *, silent: bool = False
+    ) -> None:
+        async with self:
+            if silent and self.card_status.get(card_id) == "ready":
+                return
+            self.card_status = {**self.card_status, card_id: status}
 
     async def _load_card(
-        self, card_id: str, grain: Grain, session: SessionInfo
+        self,
+        card_id: str,
+        grain: Grain,
+        session: SessionInfo,
+        *,
+        silent: bool = False,
     ) -> bool:
-        await self._set_card_status(card_id, "loading")
+        if not silent:
+            await self._set_card_status(card_id, "loading")
         client = get_client()
         endpoint = _CARD_ENDPOINTS[card_id]
         try:
@@ -206,16 +233,16 @@ class MetricsState(rx.State):
                 builder = build_data_quality
             view_model = builder(rows)
         except Unauthorized:
-            await self._mark_unauthorized_card(card_id)
+            await self._mark_unauthorized_card(card_id, silent=silent)
             return True
         except Unavailable:
-            await self._set_card_status(card_id, "503")
+            await self._mark_card_failure(card_id, "503", silent=silent)
             return False
         except (BackendError, BadPayload):
-            await self._set_card_status(card_id, "error")
+            await self._mark_card_failure(card_id, "error", silent=silent)
             return False
         except Exception:  # noqa: BLE001
-            await self._set_card_status(card_id, "error")
+            await self._mark_card_failure(card_id, "error", silent=silent)
             return False
 
         async with self:
@@ -260,9 +287,20 @@ class MetricsState(rx.State):
 
     retry_card = retry
 
-    async def _load_patients(self, session: SessionInfo) -> bool:
+    async def _mark_patients_failure(
+        self, status: str, *, silent: bool = False
+    ) -> None:
         async with self:
-            self.patients_status = "loading"
+            if silent and self.patients_status == "ready" and self._patients:
+                return
+            self.patients_status = status
+
+    async def _load_patients(
+        self, session: SessionInfo, *, silent: bool = False
+    ) -> bool:
+        if not silent:
+            async with self:
+                self.patients_status = "loading"
         try:
             key = self._patient_cache_key(session.sid)
             patients = await _CACHE.get_or_fetch(
@@ -275,15 +313,14 @@ class MetricsState(rx.State):
         except Unauthorized:
             async with self:
                 self._auth_failed = True
-                self.patients_status = "error"
+                if not silent:
+                    self.patients_status = "error"
             return True
         except Unavailable:
-            async with self:
-                self.patients_status = "503"
+            await self._mark_patients_failure("503", silent=silent)
             return False
         except Exception:  # noqa: BLE001
-            async with self:
-                self.patients_status = "error"
+            await self._mark_patients_failure("error", silent=silent)
             return False
         async with self:
             self._patients = rows
@@ -315,11 +352,13 @@ class MetricsState(rx.State):
         return False
 
     @rx.event(background=True)
-    async def load_all(self) -> AsyncIterator[Any]:
+    async def load_all(self, silent: bool = False) -> AsyncIterator[Any]:
         async with self:
-            self.card_status = {card_id: "loading" for card_id in CARD_IDS}
+            if not silent:
+                self.card_status = {card_id: "loading" for card_id in CARD_IDS}
             session = (await self.get_state(AuthState)).current_session()
             if session is None:
+                reload_event(self.router.session.client_token).set()
                 return
             self._last_sid = session.sid
             self._auth_failed = False
@@ -327,14 +366,19 @@ class MetricsState(rx.State):
                 card_id: cast(Grain, self.grain_by_card[card_id])
                 for card_id in CARD_IDS
             }
-        results = await asyncio.gather(
-            *(
-                self._load_card(card_id, grains[card_id], session)
-                for card_id in CARD_IDS
-            ),
-            self._load_patients(session),
-            self._load_freshness(session),
-        )
+            completion = reload_event(self.router.session.client_token)
+            completion.clear()
+        try:
+            results = await asyncio.gather(
+                *(
+                    self._load_card(card_id, grains[card_id], session, silent=silent)
+                    for card_id in CARD_IDS
+                ),
+                self._load_patients(session, silent=silent),
+                self._load_freshness(session),
+            )
+        finally:
+            completion.set()
         if any(results):
             yield AuthState.handle_unauthorized
 

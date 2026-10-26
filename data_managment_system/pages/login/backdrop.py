@@ -50,8 +50,12 @@ def login_left_panel() -> rx.Component:
             height="50%",
             background_image=LOGIN_CARO_PATTERN,
             background_size="2.5em 1.32em",
-            border_top=f"1.2px solid {LOGIN_CARO_LINE}" if position == "top" else "none",
-            border_bottom=f"1.2px solid {LOGIN_CARO_LINE}" if position == "bottom" else "none",
+            border_top=f"1.2px solid {LOGIN_CARO_LINE}"
+            if position == "top"
+            else "none",
+            border_bottom=f"1.2px solid {LOGIN_CARO_LINE}"
+            if position == "bottom"
+            else "none",
             pointer_events="none",
             aria_hidden="true",
         )

@@ -17,6 +17,7 @@ from data_managment_system.pages.rejections import rejections_dialog
 from data_managment_system.pages.upload import upload_dialog, upload_fab
 from data_managment_system.states.auth import AuthState
 from data_managment_system.states.metrics import MetricsState
+from data_managment_system.states.realtime import RealtimeState
 from data_managment_system.theme import (
     DASHBOARD_GAP,
     DESKTOP_COLUMN_GAP,
@@ -30,10 +31,17 @@ from data_managment_system.theme import (
 )
 
 
-@rx.page(route="/", on_load=[AuthState.require_login, MetricsState.load_all])
+@rx.page(
+    route="/",
+    on_load=[AuthState.require_login, MetricsState.load_all, RealtimeState.start],
+)
 def index() -> rx.Component:
     return gated(
         rx.box(
+            rx.window_event_listener(
+                on_focus=RealtimeState.start,
+                on_visibility_change=RealtimeState.resume_if_visible,
+            ),
             dashboard_backdrop(),
             dashboard_motion(),
             topbar(),

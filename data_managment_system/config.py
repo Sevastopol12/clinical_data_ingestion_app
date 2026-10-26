@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     request_metric_status: str
     login_path: str
     logout_path: str
+    request_realtime_ws: str
+    request_refresh: str
+    realtime_backoff_base_seconds: float = 1.0
+    realtime_backoff_max_seconds: float = 30.0
 
     model_config = SettingsConfigDict(
         env_file=".env",
